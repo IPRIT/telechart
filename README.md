@@ -21,7 +21,7 @@ To preview the production build
 npm run preview
 ```
 ___
-Author [Alexander Belov](https://github.com/IPRIT)
+Author [Alexander Belov](https://t.me/belov) 🔗
 
 [MIT](https://github.com/IPRIT/telechart/blob/master/LICENSE)
 
