@@ -4,7 +4,7 @@
 
 > Telegram Line Graph
 
-[Demo page](https://iprit.github.io/telechart/index.html)
+[Demo page](https://iprit.github.io/telechart/)
 
 ### Setup
 
