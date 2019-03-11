@@ -1,3 +1,5 @@
+<img width="128" align="center" src="https://user-images.githubusercontent.com/1553519/54141601-0dfbb300-4437-11e9-8737-7bfa8777b14c.png">
+
 # Telechart
 
 > Telegram Line Graph
