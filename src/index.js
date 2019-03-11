@@ -1,4 +1,1 @@
-import { TestClass } from "./test";
-
-const instance = new TestClass();
-instance.hello();
+console.log( 'ready to work' );
