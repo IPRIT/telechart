@@ -4,6 +4,8 @@
 
 > Telegram Line Graph
 
+[Demo page](https://iprit.github.io/telechart/index.html)
+
 ### Setup
 
 Start the development server and `voilà`.
