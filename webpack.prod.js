@@ -29,7 +29,7 @@ module.exports = {
         loader: 'babel-loader',
 
         options: {
-          presets: ['env']
+          presets: [ '@babel/preset-env' ]
         }
       },
       {
@@ -84,7 +84,7 @@ module.exports = {
     }),
     new CleanWebpackPlugin(buildPath),
     new FaviconsWebpackPlugin({
-      logo: './src/assets/telechart@512px.png',
+      logo: './assets/telechart@512px.png',
       prefix: 'icons-[hash]/',
       persistentCache: true,
       // Inject the html into the html-webpack-plugin
