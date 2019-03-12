@@ -15,7 +15,7 @@ script.onload = initDemo;
 script.src = 'https://code.highcharts.com/stock/highstock.js';
 document.head.appendChild( script );
 
-const sample = sourceData[ 1 ];
+const sample = sourceData[ 3 ];
 const columns = sample.columns;
 
 const yColumns = columns.filter(column => {
