@@ -8,6 +8,11 @@
 
 ### Setup
 
+Install dependencies
+```sh
+$ yarn # or npm install
+```
+
 Start the development server and `voilà`.
 
 ```sh

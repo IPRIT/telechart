@@ -5,3 +5,5 @@ export * from './dom';
 export * from './events';
 export * from './svg';
 export * from './text';
+export * from './themes';
+export * from './algorithms';

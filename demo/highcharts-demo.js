@@ -1,11 +1,6 @@
 import sourceData from '../samples/chart_data.json';
 
 const script = document.createElement('script');
-const container = document.createElement('div');
-
-// container
-container.setAttribute('id', 'container');
-document.body.appendChild( container );
 
 // script loader
 script.async = true;
@@ -47,7 +42,7 @@ const series = yColumns.map(column => {
 });
 
 function initDemo () {
-  Highcharts.stockChart('container', {
+  Highcharts.stockChart('highchart', {
     rangeSelector: {
       selected: 1
     },

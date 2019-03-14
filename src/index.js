@@ -1,1 +1,1 @@
-import './style/telechart.scss';
+export * from './Telechart';

@@ -1,4 +1,6 @@
+import { EventEmitter } from "../lib/EventEmitter";
 import {
+  ROOT_CLASS_NAME,
   capitalize,
   clampNumber,
   createElement,
@@ -7,7 +9,6 @@ import {
   setAttributes,
   setAttributesNS
 } from "../utils";
-import { EventEmitter } from "../lib/event-emitter";
 
 const telechartTitle = `${capitalize( TELECHART_NAME )} ${TELECHART_VERSION} (c) ${TELECHART_AUTHOR}`;
 
@@ -102,6 +103,27 @@ export class SvgRenderer extends EventEmitter {
     parent.appendChild( group );
 
     return group;
+  }
+
+  /**
+   * @param {string} text
+   * @param {Object} attrs
+   * @param {Element} parent
+   * @return {Element}
+   */
+  createText (text = '', attrs = {}, parent = this._svgContainer) {
+    const tspan = createElement('tspan', {
+      useNS: true
+    }, text, SvgRenderer.NS);
+
+    const textElement = createElement('text', {
+      useNS: true,
+      attrs
+    }, tspan, SvgRenderer.NS);
+
+    parent.appendChild( textElement );
+
+    return textElement;
   }
 
   /**
@@ -220,7 +242,8 @@ export class SvgRenderer extends EventEmitter {
         version: '1.1',
         width: this._width,
         height: this._height,
-        viewBox: this.viewBox
+        viewBox: this.viewBox,
+        class: ROOT_CLASS_NAME
       }
     }, [], SvgRenderer.NS);
   }

@@ -1,4 +1,5 @@
 import { objectEachKey } from "./base";
+import { camelToKebabCase } from './text';
 
 /**
  * @param {string} tagName
@@ -145,6 +146,10 @@ export function getElementScrollWidth (element) {
   );
 }
 
+const camelCaseAttrWhiteList = [
+  'viewBox'
+];
+
 /**
  * @param {Element} element
  * @param {Object} attrs
@@ -153,7 +158,11 @@ export function setAttributes (element, attrs = {}) {
   element = resolveElement( element );
 
   objectEachKey(attrs, key => {
-    element.setAttribute( key, attrs[ key ] );
+    const attr = camelCaseAttrWhiteList.includes( key )
+      ? key
+      : camelToKebabCase( key );
+
+    element.setAttribute( attr, attrs[ key ] );
   });
 }
 
@@ -166,6 +175,67 @@ export function setAttributesNS (element, attrs = {}, ns = null) {
   element = resolveElement( element );
 
   objectEachKey(attrs, key => {
-    element.setAttributeNS( ns, key, attrs[ key ] );
+    const attr = camelCaseAttrWhiteList.includes( key )
+      ? key
+      : camelToKebabCase( key );
+
+    element.setAttributeNS( ns, attr, attrs[ key ] );
   });
+}
+
+/**
+ * @param {Element} element
+ * @param {string} className
+ */
+export function hasClass (element, className) {
+  if (element.classList) {
+    return element.classList.contains( className );
+  }
+  return new RegExp('(\\s|^)' + className + '(\\s|$)').test( element.className );
+}
+
+/**
+ * @param {Element} element
+ * @param {string|Array<string>} classNames
+ */
+export function addClass (element, classNames = []) {
+  classNames = [].concat( classNames );
+
+  if (element.classList) {
+    return element.classList.add( ...classNames );
+  }
+
+  let className = element.className;
+
+  for (let i = 0; i < classNames.length; ++i) {
+    if (!hasClass( element, classNames[ i ] )) {
+      className += ` ${classNames[ i ]}`;
+    }
+  }
+
+  element.className = className.trim();
+}
+
+/**
+ * @param {Element} element
+ * @param {string|Array<string>} classNames
+ */
+export function removeClass (element, classNames = []) {
+  classNames = [].concat( classNames );
+
+  if (element.classList) {
+    return element.classList.remove( ...classNames );
+  }
+
+  let existingClasses = element.className.split( ' ' );
+  let classesToDelete = new Set( classNames );
+  let className = '';
+
+  for (let i = 0; i < existingClasses.length; ++i) {
+    if (!classesToDelete.has( existingClasses[ i ] )) {
+      className += ` ${existingClasses[ i ]}`;
+    }
+  }
+
+  element.className = className.trim();
 }

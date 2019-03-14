@@ -1,7 +1,7 @@
 /**
- * @author Alexander Belov
- *
  * Simple event emitter for better performance and app size
+ *
+ * @author Alexander Belov
  */
 export class EventEmitter {
 
