@@ -2,26 +2,30 @@ import { objectEachKey } from "./base";
 
 /**
  * @param {string} tagName
- * @param {*} options
- * @param {*} children
- * @param {boolean|string} ns
+ * @param {Object} options
+ * @param {Array|*} children
+ * @param {string|*} ns
  * @return {Element}
  */
-export function createElement (tagName, options, children, ns = false) {
-  const element = ns
-    ? document.createElementNS( ns, tagName )
-    : document.createElement( tagName );
+export function createElement (tagName, options = {}, children = [], ns = null) {
+  const element = !ns
+    ? document.createElement( tagName )
+    : document.createElementNS( ns, tagName );
 
   if (options.attrs) {
-    objectEachKey(options.attrs, key => {
-      console.log( options.attrs[ key ] );
-      element.setAttribute( key, options.attrs[ key ] );
-    });
+    !options.useNS
+      ? setAttributes( element, options.attrs )
+      : setAttributesNS( element, options.attrs, options.attrsNS || null );
   }
 
   if (children || Array.isArray( children )) {
     children = [].concat( children );
-    children.forEach(node => element.appendChild( node ));
+    children.forEach(node => {
+      if (typeof node === 'string') {
+        node = document.createTextNode( node );
+      }
+      element.appendChild( node );
+    });
   }
 
   return element;
@@ -32,10 +36,10 @@ export function createElement (tagName, options, children, ns = false) {
  * @return {Element | null}
  */
 export function resolveElement (elementOrSelector) {
-  if (typeof elementOrSelector === 'string') {
-    return document.querySelector( elementOrSelector );
+  if (typeof elementOrSelector !== 'string') {
+    return elementOrSelector;
   }
-  return elementOrSelector;
+  return document.querySelector( elementOrSelector );
 }
 
 /**
@@ -139,4 +143,29 @@ export function getElementScrollWidth (element) {
     element.offsetWidth,
     element.clientWidth
   );
+}
+
+/**
+ * @param {Element} element
+ * @param {Object} attrs
+ */
+export function setAttributes (element, attrs = {}) {
+  element = resolveElement( element );
+
+  objectEachKey(attrs, key => {
+    element.setAttribute( key, attrs[ key ] );
+  });
+}
+
+/**
+ * @param {Element} element
+ * @param {Object} attrs
+ * @param {string | *} ns
+ */
+export function setAttributesNS (element, attrs = {}, ns = null) {
+  element = resolveElement( element );
+
+  objectEachKey(attrs, key => {
+    element.setAttributeNS( ns, key, attrs[ key ] );
+  });
 }

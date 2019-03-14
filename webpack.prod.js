@@ -1,5 +1,7 @@
 const path = require('path');
+const pkg = require('./package.json');
 
+const webpack = require('webpack');
 const FaviconsWebpackPlugin = require('favicons-webpack-plugin');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -119,6 +121,11 @@ module.exports = {
         }
       },
       canPrint: true
+    }),
+    new webpack.DefinePlugin({
+      TELECHART_NAME: JSON.stringify( pkg.name ),
+      TELECHART_VERSION: JSON.stringify( pkg.version ),
+      TELECHART_AUTHOR: JSON.stringify( pkg.author ),
     })
   ]
 };

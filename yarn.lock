@@ -3157,6 +3157,11 @@ html-entities@^1.2.0:
   resolved "https://registry.yarnpkg.com/html-entities/-/html-entities-1.2.1.tgz#0df29351f0721163515dfb9e5543e5f6eed5162f"
   integrity sha1-DfKTUfByEWNRXfueVUPl9u7VFi8=
 
+html-inline-css-webpack-plugin@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/html-inline-css-webpack-plugin/-/html-inline-css-webpack-plugin-1.4.0.tgz#36a6a2cf07ebd866b537673765723c70fc4d3d6c"
+  integrity sha512-ZCUMe9SE3W3Eq5qFNGtpSZZ0MNxP8tAXFLuQt7tATJwqcrbBe+e72CL+uD539F8WMsBB4Ksr0xyZgpVawTm6wg==
+
 html-minifier@^3.2.3:
   version "3.5.21"
   resolved "https://registry.yarnpkg.com/html-minifier/-/html-minifier-3.5.21.tgz#d0040e054730e354db008463593194015212d20c"

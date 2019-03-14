@@ -1,5 +1,7 @@
 const path = require('path');
+const pkg = require('./package.json');
 
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
@@ -73,6 +75,11 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: './index.html',
       inject: true
+    }),
+    new webpack.DefinePlugin({
+      TELECHART_NAME: JSON.stringify( pkg.name ),
+      TELECHART_VERSION: JSON.stringify( pkg.version ),
+      TELECHART_AUTHOR: JSON.stringify( pkg.author ),
     })
   ]
 };

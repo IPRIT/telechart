@@ -1,1 +1,1 @@
-console.log( 'ready to work' );
+import './style/telechart.scss';
