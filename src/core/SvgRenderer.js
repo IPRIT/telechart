@@ -71,6 +71,7 @@ export class SvgRenderer extends EventEmitter {
    */
   constructor (contextElement) {
     super();
+
     this._parentContainer = resolveElement( contextElement );
     this._init();
   }
