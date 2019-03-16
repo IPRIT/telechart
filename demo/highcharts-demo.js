@@ -4,7 +4,7 @@ const script = document.createElement('script');
 
 // script loader
 script.async = true;
-script.onload = initDemo;
+// script.onload = initDemo;
 script.src = 'https://code.highcharts.com/stock/highstock.js';
 document.head.appendChild( script );
 

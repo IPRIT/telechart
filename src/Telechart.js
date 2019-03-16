@@ -1,4 +1,10 @@
 import './style/telechart.scss';
+
+import { AnimationSource, AnimationSourceEvents } from './core/animation/AnimationSource';
+import { SvgRenderer } from "./core/SvgRenderer";
+import { Chart } from './core/chart/Chart';
+import { Clock } from './core/misc/Clock';
+
 import {
   addClass,
   interpolateThemeClass,
@@ -6,10 +12,8 @@ import {
   resolveElement,
   ChartThemes,
   setAttributesNS,
-  cssText
+  cssText, createElement, ROOT_CLASS_NAME
 } from "./utils";
-import { SvgRenderer } from "./core/SvgRenderer";
-import { Chart } from './core/chart/Chart';
 
 export class Telechart {
 
@@ -41,7 +45,7 @@ export class Telechart {
    * @type {string}
    * @private
    */
-  _themeName = ChartThemes.default.name;
+  _themeName = ChartThemes.default;
 
   /**
    * @type {string}
@@ -56,6 +60,18 @@ export class Telechart {
   _titleElement = null;
 
   /**
+   * @type {Clock}
+   * @private
+   */
+  _clock = null;
+
+  /**
+   * @type {AnimationSource}
+   * @private
+   */
+  _animationSource = null;
+
+  /**
    * @static
    * @param {Element | string} mountTo Element or selector
    * @param {Object} options
@@ -66,6 +82,8 @@ export class Telechart {
     chart.setOptions( options );
     chart.mount( resolveElement( mountTo ) );
     chart.initialize();
+
+    chart.firstRender();
 
     return chart;
   }
@@ -78,9 +96,17 @@ export class Telechart {
   }
 
   /**
-   * @param {Element} root
+   * @param {Element} parent
    */
-  mount (root) {
+  mount (parent) {
+    const root = createElement('div', {
+      attrs: {
+        class: ROOT_CLASS_NAME
+      }
+    });
+
+    parent.appendChild( root );
+
     this._rootElement = root;
     this._renderer = new SvgRenderer( root );
   }
@@ -92,27 +118,59 @@ export class Telechart {
     this.setTheme( this._options.theme || ChartThemes.default );
     this.setTitle( this._options.title );
 
+    // create components
     this._createChart();
 
-    // todo:
-    // createNavigationChart
-    // createLabels
+    // create animation loop
+    this._clock = new Clock();
+    this._animationSource = new AnimationSource( 60, 1 ); // fps, timeScale
+    this._animationSource.on(AnimationSourceEvents.UPDATE, deltaTime => {
+      this.update( deltaTime );
+    });
+
+    requestAnimationFrame(_ => {
+      this.animate();
+    });
+  }
+
+  /**
+   * Draws first frame
+   */
+  firstRender () {
+    this._chart.firstRender();
+  }
+
+  /**
+   * Animation loop
+   */
+  animate () {
+    const deltaTime = this._clock.getDelta();
+    this._animationSource.update( deltaTime );
+
+    requestAnimationFrame(_ => this.animate());
+  }
+
+  /**
+   * Update loop
+   */
+  update (deltaTime) {
+    this._chart.update( deltaTime );
   }
 
   /**
    * @param {string} themeName
    */
   setTheme (themeName) {
-    const renderRoot = this._renderer.svgContainer;
+    const rootElement = this._rootElement;
 
     removeClass(
-      renderRoot,
+      rootElement,
       Object.keys( ChartThemes )
         .map( interpolateThemeClass )
     );
 
     addClass(
-      renderRoot,
+      rootElement,
       interpolateThemeClass( themeName )
     );
 
@@ -137,6 +195,13 @@ export class Telechart {
     this._renderer && this._renderer.destroy();
     this._rootElement = null;
     this._renderer = null;
+  }
+
+  /**
+   * @return {string}
+   */
+  get themeName () {
+    return this._themeName;
   }
 
   /**

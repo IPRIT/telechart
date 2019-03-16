@@ -1,4 +1,4 @@
-import { EventEmitter } from "../lib/EventEmitter";
+import { EventEmitter } from "./misc/EventEmitter";
 import {
   ROOT_CLASS_NAME,
   capitalize,
@@ -171,6 +171,28 @@ export class SvgRenderer extends EventEmitter {
   }
 
   /**
+   * @param {number} width
+   * @param {number} height
+   * @param {*} attrs
+   * @param {SVGElement | Element} parent
+   * @return {SVGRectElement}
+   */
+  createRect (width, height, attrs = {}, parent = this._svgContainer) {
+    Object.assign(attrs, {
+      width, height
+    });
+
+    const rectElement = createElement('rect', {
+      useNS: true,
+      attrs
+    }, [], SvgRenderer.NS);
+
+    parent.appendChild( rectElement );
+
+    return rectElement;
+  }
+
+  /**
    * Destroy the renderer
    */
   destroy () {
@@ -244,7 +266,7 @@ export class SvgRenderer extends EventEmitter {
         width: this._width,
         height: this._height,
         viewBox: this.viewBox,
-        class: ROOT_CLASS_NAME
+        class: 'telechart-render'
       }
     }, [], SvgRenderer.NS);
   }
@@ -327,5 +349,6 @@ export class SvgRenderer extends EventEmitter {
     }
 
     window.removeEventListener( 'resize', this._resizeListener );
+    this._resizeListener = null;
   }
 }

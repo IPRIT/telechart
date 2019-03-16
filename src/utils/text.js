@@ -33,3 +33,23 @@ export function camelToKebabCase (text) {
     text[ 0 ].toLowerCase() + text.substr( 1 )
   ).replace( /([A-Z])/g, '-$1' ).toLowerCase();
 }
+
+/**
+ * @param {string} href
+ * @return {*}
+ */
+export function parseQueryString (href) {
+  const queryString = href.split('?').slice(1);
+  if (!queryString.length) {
+    return {};
+  }
+
+  return queryString[ 0 ].split( '&' ).map(part => {
+    const keyValue = part.split( '=' );
+    return {
+      [keyValue[ 0 ]]: keyValue[ 1 ]
+    };
+  }).reduce((result, obj) => {
+    return Object.assign(result, obj);
+  })
+}

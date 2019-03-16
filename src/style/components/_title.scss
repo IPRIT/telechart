@@ -6,7 +6,6 @@
   font-size: 18px;
   color: map_get($default-theme, title-color);
   fill: map_get($default-theme, title-color);
-  opacity: 0;
   transition: $primary-transition;
 
   @include dark-theme {

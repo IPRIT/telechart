@@ -28,6 +28,18 @@ export class Point {
   _y = 0;
 
   /**
+   * @type {number}
+   * @private
+   */
+  _svgX = 0;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _svgY = 0;
+
+  /**
    * @param {number} x
    * @param {number} y
    */
@@ -59,6 +71,15 @@ export class Point {
 
   /**
    * @param {number} x
+   * @param {number} y
+   */
+  setXY (x, y) {
+    this.setX( x );
+    this.setY( y );
+  }
+
+  /**
+   * @param {number} x
    */
   addX (x) {
     this._x += x;
@@ -69,6 +90,38 @@ export class Point {
    */
   addY (y) {
     this._y += y;
+  }
+
+  /**
+   * @param {number} x
+   * @param {number} y
+   */
+  addXY (x, y) {
+    this.addX( x );
+    this.addY( y );
+  }
+
+  /**
+   * @param {number} svgX
+   */
+  setSvgX (svgX) {
+    this._svgX = svgX;
+  }
+
+  /**
+   * @param {number} svgY
+   */
+  setSvgY (svgY) {
+    this._svgY = svgY;
+  }
+
+  /**
+   * @param {number} svgX
+   * @param {number} svgY
+   */
+  setSvgXY (svgX, svgY) {
+    this._svgX = svgX;
+    this._svgY = svgY;
   }
 
   /**
@@ -90,6 +143,20 @@ export class Point {
    */
   get y () {
     return this._y;
+  }
+
+  /**
+   * @return {number}
+   */
+  get svgX () {
+    return this._svgX;
+  }
+
+  /**
+   * @return {number}
+   */
+  get svgY () {
+    return this._svgY;
   }
 
   /**

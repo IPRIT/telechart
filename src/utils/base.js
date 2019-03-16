@@ -50,3 +50,11 @@ export function ensureNumber (value) {
 export function isObject (value) {
   return typeof value === 'object' && value !== null;
 }
+
+/**
+ * @param {Date|*} value
+ * @return {boolean}
+ */
+export function isDate (value) {
+  return value instanceof Date && !isNaN( value.valueOf() );
+}
