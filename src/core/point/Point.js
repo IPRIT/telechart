@@ -1,4 +1,12 @@
+let POINT_AUTOINCREMENT = 1;
+
 export class Point {
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _id = POINT_AUTOINCREMENT++;
 
   /**
    * @enum 'point' | 'group'
@@ -61,6 +69,13 @@ export class Point {
    */
   addY (y) {
     this._y += y;
+  }
+
+  /**
+   * @return {number}
+   */
+  get id () {
+    return this._id;
   }
 
   /**

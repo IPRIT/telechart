@@ -15,9 +15,17 @@ const chart = Telechart.create(container, {
     names: chartData.names,
     types: chartData.types,
     colors: chartData.colors,
+  },
+  seriesOptions: {
+    grouping: {
+      pixels: 2
+    }
   }
 });
 
 setTimeout(_ => {
   chart.setTheme( ChartThemes.dark );
+  chart.setTitle( 'Followers Dark' );
+
+  console.log( chart );
 }, 5000);

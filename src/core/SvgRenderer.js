@@ -31,7 +31,7 @@ export class SvgRenderer extends EventEmitter {
   _parentContainer = null;
 
   /**
-   * @type {Element}
+   * @type {SVGElement}
    * @private
    */
   _svgContainer = null;
@@ -95,7 +95,7 @@ export class SvgRenderer extends EventEmitter {
   /**
    * @param {string} text
    * @param {Element} parent
-   * @return {Element}
+   * @return {SVGDescElement}
    */
   createDesc (text = '', parent = this._svgContainer) {
     const group = createElement('desc', {
@@ -110,7 +110,7 @@ export class SvgRenderer extends EventEmitter {
    * @param {string} text
    * @param {Object} attrs
    * @param {Element} parent
-   * @return {Element}
+   * @return {SVGTextElement}
    */
   createText (text = '', attrs = {}, parent = this._svgContainer) {
     const tspan = createElement('tspan', {
@@ -130,7 +130,7 @@ export class SvgRenderer extends EventEmitter {
   /**
    * @param {Element[]} defs
    * @param {Element} parent
-   * @return {Element}
+   * @return {SVGDefsElement}
    */
   createDefs (defs = [], parent = this._svgContainer) {
     defs = [].concat( defs );
@@ -147,7 +147,7 @@ export class SvgRenderer extends EventEmitter {
    * @param {string} pathText
    * @param {Object} attrs
    * @param {Element} parent
-   * @return {Element}
+   * @return {SVGPathElement}
    */
   createPath (pathText, attrs = {}, parent = this._svgContainer) {
     Object.assign(attrs, { d: pathText });
@@ -162,7 +162,7 @@ export class SvgRenderer extends EventEmitter {
   }
 
   /**
-   * @param {Element} pathElement
+   * @param {SVGPathElement} pathElement
    * @param {Object} updatingAttrs
    */
   updatePath (pathElement, pathText, updatingAttrs = {}) {
@@ -193,7 +193,7 @@ export class SvgRenderer extends EventEmitter {
   }
 
   /**
-   * @return {Element}
+   * @return {SVGElement}
    */
   get svgContainer () {
     return this._svgContainer;

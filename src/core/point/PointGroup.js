@@ -1,5 +1,5 @@
 import { Point } from './Point';
-import { arrayAvg } from '../utils';
+import { arrayAvg } from '../../utils/index';
 
 export class PointGroup extends Point {
 
