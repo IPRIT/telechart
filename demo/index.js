@@ -1,3 +1,2 @@
-import './style/base.scss';
-// import './highcharts-demo';
+import './style/demo.scss';
 import './telechart-demo';
