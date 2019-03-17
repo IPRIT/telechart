@@ -28,12 +28,12 @@ body {
 
           span {
             &:first-of-type {
-              transform: translateY(0) scale(1);
+              transform: translate(0, 0) scale(1);
               opacity: 1;
             }
 
             &:last-of-type {
-              transform: translateY(24px) scale(.95);
+              transform: translate(5px, 24px) scale(.95);
               opacity: 0;
             }
           }
@@ -54,16 +54,16 @@ body {
 
       .text-switcher {
         &__switcher {
-          width: 32px;
+          width: 31px;
 
           span {
             &:first-of-type {
-              transform: translateY(-24px) scale(.95);
+              transform: translate(-5px, -24px) scale(.95);
               opacity: 0;
             }
 
             &:last-of-type {
-              transform: translateY(0) scale(1);
+              transform: translate(0, 0) scale(1);
               opacity: 1;
             }
           }
@@ -116,7 +116,7 @@ body {
 
   &__switcher {
     display: inline-block;
-    width: 42px;
+    width: 43px;
     position: relative;
     transition: width $primary-transition;
     will-change: width;
@@ -129,15 +129,6 @@ body {
       transition: all $primary-transition;
       will-change: transform;
       transform-origin: 50% 50%;
-
-      &:first-of-type {
-        transform: translateY(0) scale(1);
-      }
-
-      &:last-of-type {
-        transform: translateY(24px) scale(.95);
-        opacity: 0;
-      }
     }
   }
 }
