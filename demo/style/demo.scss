@@ -92,6 +92,13 @@ body {
   touch-action: manipulation;
   white-space: nowrap;
 
+  .browser-safari & {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background-color: transparent !important;
+    padding: 36px 16px !important;
+  }
+
   &:active {
     color: rgba($link-color, .7);
   }

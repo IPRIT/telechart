@@ -4,7 +4,7 @@ import {
   addClass, animationTimeout,
   ChartThemes, ChartThemesColors,
   createElement,
-  cssText,
+  cssText, isBrowserSafari,
   parseQueryString,
   removeClass,
   setAttributes
@@ -84,6 +84,10 @@ function updateChartsTheme () {
 function updatePageTheme () {
   removeClass( document.body, [ 'default-theme', 'dark-theme' ] );
   addClass( document.body, `${currentThemeName}-theme` );
+
+  if (isBrowserSafari()) {
+    addClass( document.body, 'browser-safari' );
+  }
 
   setTimeout(_ => {
     updatePageThemeColor();

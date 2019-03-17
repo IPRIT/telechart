@@ -3,7 +3,15 @@ import { arrayMinMax, arraysEqual, ensureNumber } from '../../utils';
 import { Point } from '../point/Point';
 import { PointGroup } from '../point/PointGroup';
 
+let SERIES_AUTOINCREMENT = 1;
+
 export class Series extends EventEmitter {
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _id = SERIES_AUTOINCREMENT++;
 
   /**
    * @type {Element}
@@ -240,6 +248,12 @@ export class Series extends EventEmitter {
 
     // update svgX & svgY for each point
     this.updateViewportPoints();
+
+    // creates and stores wrapper for following path element
+    this._createGroup();
+
+    // creates and stores initial path element
+    this._createPath();
   }
 
   /**
@@ -390,6 +404,13 @@ export class Series extends EventEmitter {
   }
 
   /**
+   * @return {number}
+   */
+  get id () {
+    return this._id;
+  }
+
+  /**
    * @return {Array<number>}
    */
   get xAxis () {
@@ -500,6 +521,35 @@ export class Series extends EventEmitter {
   /**
    * @private
    */
+  _createGroup () {
+    this._group = this._renderer.createGroup({
+      class: 'telechart-series-path-group',
+      id: `telechart-path-${this._id}`,
+      x: 0,
+      y: 0
+    }, [], this._parent);
+  }
+
+  /**
+   * @private
+   */
+  _createPath () {
+    this._pathText = this._computePathText( this._viewportPoints );
+
+    this._pathElement = this._renderer.createPath(this._pathText, {
+      class: 'telechart-series-path',
+      d: this._pathText,
+      fill: 'none',
+      stroke: this._color,
+      strokeWidth: '2',
+      strokeLinejoin: 'round',
+      strokeLinecap: 'round'
+    }, this._group);
+  }
+
+  /**
+   * @private
+   */
   _createPoints () {
     const xAxis = this._xAxis;
     const yAxis = this._yAxis;
@@ -591,5 +641,32 @@ export class Series extends EventEmitter {
    */
   _toRelativeX (x) {
     return x - this._viewportRange[ 0 ];
+  }
+
+  /**
+   * @param {Array<Point | PointGroup>} points
+   * @return {string}
+   * @private
+   */
+  _computePathText (points = []) {
+    let result = '';
+
+    if (!points.length) {
+      return result;
+    }
+
+    result += 'M ';
+
+    for (let i = 0; i < points.length; ++i) {
+      const point = points[ i ];
+
+      if (i !== 0) {
+        result += 'L ';
+      }
+
+      result += [ point.svgX, point.svgY ].join(' ') + ' ';
+    }
+
+    return result;
   }
 }
