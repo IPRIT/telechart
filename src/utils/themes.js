@@ -15,3 +15,11 @@ export const ChartThemes = {
   default: 'default',
   dark: 'dark'
 };
+
+/**
+ * @type {{default: string, dark: string}}
+ */
+export const ChartThemesColors = {
+  default: '#ffffff',
+  dark: '#242F3E'
+};

@@ -2,7 +2,7 @@ import sourceData from '../samples/chart_data.json';
 import { Telechart } from '../src';
 import {
   addClass,
-  ChartThemes,
+  ChartThemes, ChartThemesColors,
   createElement,
   cssText,
   parseQueryString,
@@ -85,4 +85,20 @@ window.addEventListener('load', _ => {
 function updatePageTheme () {
   removeClass( document.body, [ 'default-theme', 'dark-theme' ] );
   addClass( document.body, `${chart.themeName}-theme` );
+
+  const themeColor = ChartThemesColors[ chart.themeName ];
+
+  let metaTheme = document.querySelector( '[name="theme-color"]' );
+
+  if (!metaTheme) {
+    metaTheme = createElement('meta', {
+      attrs: {
+        name: 'theme-color',
+        content: themeColor
+      }
+    });
+    document.head.appendChild( metaTheme );
+  } else {
+    metaTheme.setAttribute( 'content', themeColor );
+  }
 }
