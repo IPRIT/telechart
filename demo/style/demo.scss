@@ -24,7 +24,7 @@ body {
 
       .text-switcher {
         &__switcher {
-          width: 42px;
+          width: 47px;
 
           span {
             &:first-of-type {
@@ -54,7 +54,7 @@ body {
 
       .text-switcher {
         &__switcher {
-          width: 31px;
+          width: 36px;
 
           span {
             &:first-of-type {
@@ -81,7 +81,7 @@ body {
   border-radius: 50px;
   text-align: center;
   border: 0;
-  font-size: 18px;
+  font-size: 20px;
   outline: none;
   cursor: pointer;
   transition: all $primary-transition;
@@ -116,7 +116,6 @@ body {
 
   &__switcher {
     display: inline-block;
-    width: 43px;
     position: relative;
     transition: width $primary-transition;
     will-change: width;
@@ -126,7 +125,7 @@ body {
       position: absolute;
       top: 0;
       left: 0;
-      transition: all $primary-transition;
+      transition: transform $primary-transition, opacity $primary-transition;
       will-change: transform;
       transform-origin: 50% 50%;
     }
