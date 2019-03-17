@@ -1,6 +1,7 @@
 import { EventEmitter } from '../misc/EventEmitter';
-import { arrayMinMax } from '../../utils';
+import { arrayMinMax, arraysEqual, ensureNumber } from '../../utils';
 import { Point } from '../point/Point';
+import { PointGroup } from '../point/PointGroup';
 
 export class Series extends EventEmitter {
 
@@ -92,6 +93,18 @@ export class Series extends EventEmitter {
    * @type {number}
    * @private
    */
+  _groupingPixels = 2;
+
+  /**
+   * @type {Chart}
+   * @private
+   */
+  _chart = null;
+
+  /**
+   * @type {number}
+   * @private
+   */
   _chartWidth = null;
 
   /**
@@ -116,7 +129,19 @@ export class Series extends EventEmitter {
    * @type {number}
    * @private
    */
-  _viewportPixel = 0;
+  _viewportPixelX = 0;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _viewportPixelY = 0;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  _viewportPixelUpdateNeeded = true;
 
   /**
    * @type {Array<number>}
@@ -129,6 +154,12 @@ export class Series extends EventEmitter {
    * @private
    */
   _viewportPoints = [];
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  _viewportPointsGroupingNeeded = true;
 
   /**
    * @type {number}
@@ -204,9 +235,18 @@ export class Series extends EventEmitter {
     if (this._pathElement) {
       return;
     }
+    // approximate viewport points for large data set
+    this.regroupViewportPoints();
 
-    // todo: create path into group and then append it to parent
-    this.updateSvgCoordinates();
+    // update svgX & svgY for each point
+    this.updateViewportPoints();
+  }
+
+  /**
+   * @param {Chart} chart
+   */
+  setChart (chart) {
+    this._chart = chart;
   }
 
   /**
@@ -255,12 +295,16 @@ export class Series extends EventEmitter {
    * @param {Array<number>} rangeIndexes
    */
   setViewportRange (range, rangeIndexes) {
+    const oldRangeIndexes = this._viewportRangeIndexes;
+
     this._viewportRange = range;
     this._viewportRangeIndexes = rangeIndexes;
     this._viewportDistance = this._viewportRange[ 1 ] - this._viewportRange[ 0 ];
 
-    // pre-compute pixel to increase performance
-    this._updateViewportPixel();
+    if (!arraysEqual( rangeIndexes, oldRangeIndexes )) {
+      // mark as we need to re-compute approximation in next animation tick
+      this._viewportPixelUpdateNeeded = true;
+    }
 
     // update minY and maxY local values
     this._updateLocalExtremes();
@@ -270,8 +314,62 @@ export class Series extends EventEmitter {
    * Updates points array of viewport
    */
   updateViewportPoints () {
+    for (let i = 0; i < this._viewportPoints.length; ++i) {
+      const point = this._viewportPoints[ i ];
+      point.setSvgXY(
+        this._projectXToSvg( point.x ),
+        this._projectYToSvg( point.y ),
+      );
+    }
+  }
+
+  regroupViewportPoints () {
+    if (!this._viewportPointsGroupingNeeded) {
+      return;
+    }
+
     const [ startIndex, endIndex ] = this._viewportRangeIndexes;
-    this._viewportPoints = this._points.slice( startIndex, endIndex + 1 );
+
+    // if we have no enough points
+    // then we don't need to approximate
+    if (endIndex - startIndex < 100) {
+      // just slice points from the original array
+      // [ startIndex, endIndex ]
+      this._viewportPoints = this._points.slice( startIndex, endIndex + 1 );
+
+      // all work done here
+      return;
+    }
+
+    let viewportPoints = [];
+    let groupingLimitValue = this._groupingPixels * this._viewportPixelX;
+    let groupStartIndex = startIndex;
+
+    for (let i = startIndex + 1; i <= endIndex; ++i) {
+      const point = this._points[ i ];
+
+      const groupStartDifference = point.x - this._points[ groupStartIndex ].x;
+      if (groupStartDifference >= groupingLimitValue || i === endIndex) {
+        if (groupStartIndex !== i - 1) {
+          // we have 2 or more points to group
+          // [ startIndex, lastIndex ] all indexes inclusive
+          const group = this._points.slice( groupStartIndex, i );
+          const pointGroup = new PointGroup( group, true );
+          viewportPoints.push( pointGroup );
+        } else {
+          if (startIndex === i - 1) {
+            // add first point
+            viewportPoints.push( this._points[ startIndex ] );
+          }
+          viewportPoints.push( point );
+        }
+
+        groupStartIndex = i;
+      }
+    }
+
+    this._viewportPointsGroupingNeeded = false;
+    this._viewportPoints = viewportPoints;
   }
 
   /**
@@ -283,9 +381,12 @@ export class Series extends EventEmitter {
     this._localYScale = desiredYScale;
   }
 
-  updateSvgCoordinates () {
-    console.log( this._projectXToSvg( this._viewportPoints[0].x ) );
-    console.log( this._projectXToSvg( this._viewportPoints[10].x ) );
+  /**
+   * Updates pixel value for each axis
+   */
+  updateViewportPixel () {
+    this._viewportPixelX = this._viewportDistance / this._chartWidth;
+    this._viewportPixelY = this._chart.globalExtremeDifference / this._chartHeight;
   }
 
   /**
@@ -359,6 +460,13 @@ export class Series extends EventEmitter {
   }
 
   /**
+   * @return {boolean}
+   */
+  get viewportPixelUpdateNeeded () {
+    return this._viewportPixelUpdateNeeded;
+  }
+
+  /**
    * @private
    */
   _parseSettings () {
@@ -367,7 +475,7 @@ export class Series extends EventEmitter {
       label, type,
       color, name,
       width, height,
-      options
+      options = {}
     } = this._settings;
 
     this._xAxis = xAxis;
@@ -378,6 +486,13 @@ export class Series extends EventEmitter {
 
     this._chartWidth = width;
     this._chartHeight = height;
+
+    const groupingOptions = options.grouping;
+    if (groupingOptions) {
+      if (groupingOptions.pixels) {
+        this._groupingPixels = ensureNumber( groupingOptions.pixels );
+      }
+    }
 
     this._seriesOptions = options;
   }
@@ -426,7 +541,21 @@ export class Series extends EventEmitter {
    * @private
    */
   _projectXToSvg (x) {
-    return this._toRelativeX( x ) / this._viewportPixel;
+    return this._toRelativeX( x ) / this._viewportPixelX;
+  }
+
+  /**
+   * @param {number} y
+   * @return {number}
+   * @private
+   */
+  _projectYToSvg (y) {
+    return this._chartHeight
+      - (
+        y - this._chart.localMinY
+      ) / (
+        this._viewportPixelY * this._currentYScale
+      );
   }
 
   /**
@@ -452,14 +581,7 @@ export class Series extends EventEmitter {
     this._chartWidth = this._renderer.width;
 
     // update value-per-pixel and min-max distance
-    this._updateViewportPixel();
-  }
-
-  /**
-   * @private
-   */
-  _updateViewportPixel () {
-    this._viewportPixel = this._viewportDistance / this._chartWidth;
+    this.updateViewportPixel();
   }
 
   /**

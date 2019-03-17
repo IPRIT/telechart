@@ -1,7 +1,7 @@
 import sourceData from '../samples/chart_data.json';
 import { Telechart } from '../src';
 import {
-  addClass,
+  addClass, animationTimeout,
   ChartThemes, ChartThemesColors,
   createElement,
   cssText,
@@ -10,33 +10,26 @@ import {
   setAttributes
 } from '../src/utils';
 
-const chartData = sourceData[ 0 ];
-
 const query = parseQueryString( location.search );
+let currentThemeName = query && query.theme || 'default';
 
-const initialTheme = query && query.theme || 'default';
+const charts = [];
 
-const container = document.querySelector( '#telechart-1' );
+const from = 0;
+const count = 5;
 
-const start = performance.now();
-const chart = Telechart.create(container, {
-  title: 'Followers',
-  series: {
-    columns: chartData.columns,
-    names: chartData.names,
-    types: chartData.types,
-    colors: chartData.colors,
-  },
-  seriesOptions: {
-    grouping: {
-      pixels: 2
-    }
-  }
-});
-console.log( chart, performance.now() - start );
+// initialize charts using requestAnimationFrame
+// for better user experience
+sourceData
+  .slice(from, from + count)
+  .map((chartData, index) => {
+    return animationTimeout( 20 * index, [ chartData, index ] );
+  })
+  .map(animation => {
+    animation.then(([ chartData, index ]) => createChart( chartData, index ));
+    return animation;
+  });
 
-// set initial theme
-chart.setTheme( initialTheme );
 updatePageTheme();
 
 let buttonContent = `
@@ -63,13 +56,7 @@ window.addEventListener('load', _ => {
   document.body.appendChild( themeButton );
 
   themeButton.addEventListener('click', ev => {
-    const isDefaultTheme = chart.themeName === ChartThemes.default;
-    const newTheme = isDefaultTheme
-      ? ChartThemes.dark
-      : ChartThemes.default;
-
-    chart.setTheme( newTheme );
-
+    updateChartsTheme();
     updatePageTheme();
   });
 
@@ -82,9 +69,21 @@ window.addEventListener('load', _ => {
   }, 100);
 });
 
+function updateChartsTheme () {
+  const isDefaultTheme = currentThemeName === ChartThemes.default;
+  const newTheme = isDefaultTheme
+    ? ChartThemes.dark
+    : ChartThemes.default;
+  currentThemeName = newTheme;
+
+  charts.forEach(chart => {
+    chart.setTheme( newTheme );
+  });
+}
+
 function updatePageTheme () {
   removeClass( document.body, [ 'default-theme', 'dark-theme' ] );
-  addClass( document.body, `${chart.themeName}-theme` );
+  addClass( document.body, `${currentThemeName}-theme` );
 
   setTimeout(_ => {
     updatePageThemeColor();
@@ -92,7 +91,7 @@ function updatePageTheme () {
 }
 
 function updatePageThemeColor () {
-  const themeColor = ChartThemesColors[ chart.themeName ];
+  const themeColor = ChartThemesColors[ currentThemeName ];
 
   let metaTheme = document.querySelector( '[name="theme-color"]' );
 
@@ -107,4 +106,31 @@ function updatePageThemeColor () {
   } else {
     metaTheme.setAttribute( 'content', themeColor );
   }
+}
+
+function createChart (chartData, index) {
+  const container = document.querySelector( `#telechart-${index + 1}` );
+
+  const start = performance.now();
+  const chart = Telechart.create(container, {
+    title: 'Followers',
+    series: {
+      columns: chartData.columns,
+      names: chartData.names,
+      types: chartData.types,
+      colors: chartData.colors,
+    },
+    seriesOptions: {
+      grouping: {
+        pixels: 2
+      }
+    }
+  });
+
+  console.log( `#${index}`, performance.now() - start );
+
+  // set initial theme
+  chart.setTheme( currentThemeName );
+
+  charts.push( chart );
 }

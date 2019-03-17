@@ -1,3 +1,8 @@
+export const PointTypes = {
+  point: 'point',
+  group: 'group',
+};
+
 let POINT_AUTOINCREMENT = 1;
 
 export class Point {

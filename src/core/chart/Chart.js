@@ -25,6 +25,7 @@ export class Chart extends EventEmitter {
 
   /**
    * @type {Array<number>}
+   * @private
    */
   _xAxis = [];
 
@@ -118,7 +119,7 @@ export class Chart extends EventEmitter {
    * @param {number|Date} minX
    * @param {number|Date} maxX
    */
-  setRange (minX, maxX) {
+  setViewportRange (minX, maxX) {
     const xAxis = this._xAxis;
 
     const globalMinX = xAxis[ 0 ];
@@ -138,18 +139,16 @@ export class Chart extends EventEmitter {
 
     this._viewportRange = [ minX, maxX ];
 
-    // recompute points boundaries
+    // recompute boundaries (indexes)
     this._updateViewportIndexes();
 
     this._eachSeries(line => {
       // set X viewport interval for line
       line.setViewportRange( this._viewportRange, this._viewportRangeIndexes );
-
-      // slice only visible points
-      line.updateViewportPoints();
     });
 
     // update global and local extremes
+    // update local scale
     this._updateExtremes();
 
     // update scales for each line
@@ -182,6 +181,34 @@ export class Chart extends EventEmitter {
    */
   get localExtremeDifference () {
     return this._localMaxY - this._localMinY;
+  }
+
+  /**
+   * @return {number}
+   */
+  get localMinY () {
+    return this._localMinY;
+  }
+
+  /**
+   * @return {number}
+   */
+  get localMaxY () {
+    return this._localMaxY;
+  }
+
+  /**
+   * @return {number}
+   */
+  get globalMinY () {
+    return this._globalMinY;
+  }
+
+  /**
+   * @return {number}
+   */
+  get globalMaxY () {
+    return this._globalMaxY;
   }
 
   /**
@@ -260,6 +287,9 @@ export class Chart extends EventEmitter {
       // create instance
       const series = new Series( this._renderer, this._seriesGroup, settings );
 
+      // provide context for each series
+      series.setChart( this );
+
       this._series.push( series );
     }
   }
@@ -286,6 +316,7 @@ export class Chart extends EventEmitter {
 
     this._eachSeries(line => {
       if (!line.isVisible) {
+        // filter only visible series
         return;
       }
 
@@ -324,6 +355,7 @@ export class Chart extends EventEmitter {
   _updateSeriesScale () {
     this._eachSeries(line => {
       line.setScale( this._currentYScale, this._localYScale );
+      line.updateViewportPixel();
     });
   }
 
@@ -349,11 +381,11 @@ export class Chart extends EventEmitter {
     const globalMinX = this._xAxis[ 0 ];
     const globalMaxX = this._xAxis[ this._xAxis.length - 1 ];
     const difference = globalMaxX - globalMinX;
-    const initialViewport = Math.floor( difference * .25 );
+    const initialViewport = Math.floor( difference );
     const viewportPadding = Math.floor( initialViewport * .05 );
 
     // set initial range
-    this.setRange( globalMaxX - initialViewport - viewportPadding, globalMaxX + viewportPadding );
+    this.setViewportRange( globalMaxX - initialViewport - viewportPadding, globalMaxX + viewportPadding );
   }
 
   /**

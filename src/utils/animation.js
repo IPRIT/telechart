@@ -21,6 +21,24 @@ export function warpRatio (deltaTime, framesDeltaSec = FRAMES_DELTA_SEC) {
   return deltaTime / framesDeltaSec;
 }
 
+/**
+ * @param {number} timeoutMs
+ * @param {*} args
+ * @return {Promise<void>}
+ */
+export function animationTimeout (timeoutMs = 0, ...args) {
+  return new Promise(resolve => {
+    const fulfillmentCallback = resolve.bind( null, ...args );
+    const cb = () => requestAnimationFrame( fulfillmentCallback );
+
+    if (!timeoutMs) {
+      cb();
+    } else {
+      setTimeout( _ => cb(), timeoutMs );
+    }
+  });
+}
+
 // linear
 export const linear = t => t;
 // accelerating from zero velocity

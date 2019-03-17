@@ -1,4 +1,4 @@
-import { Point } from './Point';
+import { Point, PointTypes } from './Point';
 import { arrayAvg } from '../../utils/index';
 
 export class PointGroup extends Point {
@@ -16,27 +16,31 @@ export class PointGroup extends Point {
   _approximationFn = arrayAvg;
 
   /**
-   * @param {number} x
-   * @param {number} y
    * @param {Array<Point>} points
+   * @param {boolean?} autoCompute
    */
-  constructor (x = 0, y = 0, points = []) {
-    super( x, y );
-    this.setPointsGroup( points );
+  constructor (points = [], autoCompute = true) {
+    super();
+    this.setType( PointTypes.group );
+    this.setPointsGroup( points, autoCompute );
   }
 
   /**
    * @param {Array<Point>} points
+   * @param {boolean?} autoCompute
    */
-  setPointsGroup (points) {
+  setPointsGroup (points, autoCompute = true) {
     this._pointsGroup = points;
-    this._approximate();
+
+    if (autoCompute) {
+      this.approximate();
+    }
   }
 
   /**
    * @private
    */
-  _approximate () {
+  approximate () {
     this.setX( this._approximateX() );
     this.setY( this._approximateY() );
   }

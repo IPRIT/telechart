@@ -1,4 +1,28 @@
 /**
+ * @param {Array<*>} arrayA
+ * @param {Array<*>} arrayB
+ * @param {string | *} key
+ * @return {boolean}
+ */
+export function arraysEqual (arrayA, arrayB, key = null) {
+  if (!Array.isArray(arrayA)
+    || !Array.isArray(arrayB)
+    || arrayA.length !== arrayB.length) {
+    return false;
+  }
+  for (let i = 0; i < arrayA.length; ++i) {
+    if (key) {
+      if (arrayA[ i ][ key ] !== arrayB[ i ][ key ]) {
+        return false;
+      }
+    } else if (arrayA[ i ] !== arrayB[ i ]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
  * @param {Array<number>} array
  * @param {number?} startIndex
  * @param {number?} endIndex
@@ -107,6 +131,7 @@ export function arrayAvg (array) {
   let length = array.length;
   let result = arraySum( array );
 
+  // prevent from dividing by zero
   if (length) {
     result = result / length;
   }
