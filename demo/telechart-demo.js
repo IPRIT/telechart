@@ -86,6 +86,12 @@ function updatePageTheme () {
   removeClass( document.body, [ 'default-theme', 'dark-theme' ] );
   addClass( document.body, `${chart.themeName}-theme` );
 
+  setTimeout(_ => {
+    updatePageThemeColor();
+  }, 300);
+}
+
+function updatePageThemeColor () {
   const themeColor = ChartThemesColors[ chart.themeName ];
 
   let metaTheme = document.querySelector( '[name="theme-color"]' );
