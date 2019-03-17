@@ -23,9 +23,10 @@ export function createElement (tagName, options = {}, children = [], ns = null) 
     children = [].concat( children );
     children.forEach(node => {
       if (typeof node === 'string') {
-        node = document.createTextNode( node );
+        element.innerHTML += node;
+      } else {
+        element.appendChild( node );
       }
-      element.appendChild( node );
     });
   }
 

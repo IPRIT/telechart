@@ -21,7 +21,7 @@ export class Chart extends EventEmitter {
    * @type {number}
    * @private
    */
-  _height = 250;
+  _height = 250; // chart height will be constant
 
   /**
    * @type {Array<number>}
@@ -121,8 +121,8 @@ export class Chart extends EventEmitter {
   setRange (minX, maxX) {
     const xAxis = this._xAxis;
 
-    const actualMinX = xAxis[ 0 ];
-    const actualMaxX = xAxis[ xAxis.length - 1 ];
+    const globalMinX = xAxis[ 0 ];
+    const globalMaxX = xAxis[ xAxis.length - 1 ];
 
     if (isDate( minX )) {
       minX = minX.getTime();
@@ -131,8 +131,10 @@ export class Chart extends EventEmitter {
       maxX = maxX.getTime();
     }
 
-    minX = Math.max( minX, actualMinX );
-    maxX = Math.min( maxX, actualMaxX );
+    const padding = ( maxX - minX ) * .05;
+
+    minX = Math.max( minX, globalMinX - padding );
+    maxX = Math.min( maxX, globalMaxX + padding );
 
     this._viewportRange = [ minX, maxX ];
 
@@ -183,11 +185,27 @@ export class Chart extends EventEmitter {
   }
 
   /**
+   * @return {number}
+   */
+  get chartWidth () {
+    return this._renderer.width;
+  }
+
+  /**
+   * @return {number}
+   */
+  get chartHeight () {
+    return this._height;
+  }
+
+  /**
    * @private
    */
   _initialize () {
     this._createSeriesGroup();
     this._createSeries();
+    this._addEvents();
+    this._setInitialRange();
   }
 
   /**
@@ -231,26 +249,19 @@ export class Chart extends EventEmitter {
       const color = colors[ label ];
       const name = names[ label ];
 
+      // prepare series settings
       const settings = {
         xAxis, yAxis, label, type,
-        color, name, options
+        color, name, options,
+        width: this.chartWidth,
+        height: this.chartHeight
       };
 
+      // create instance
       const series = new Series( this._renderer, this._seriesGroup, settings );
-
-      series.on('visibleChange', _ => {
-        this._onSeriesVisibleChange( series );
-      });
 
       this._series.push( series );
     }
-
-    const minX = xAxis[ 0 ];
-    const maxX = xAxis[ xAxis.length - 1 ];
-    const initialViewport = Math.floor( ( maxX - minX ) * .25 );
-
-    // set initial range
-    this.setRange( maxX - initialViewport, maxX );
   }
 
   /**
@@ -262,18 +273,6 @@ export class Chart extends EventEmitter {
     const [ maxLowerIndex, maxUpperIndex ] = binarySearchIndexes( this._xAxis, rangeEnd );
 
     this._viewportRangeIndexes = [ minUpperIndex, maxLowerIndex ];
-  }
-
-  /**
-   * @param {Series} series
-   * @private
-   */
-  _onSeriesVisibleChange (series) {
-    // find new extremes and scale
-    this._updateExtremes();
-
-    // setup new scale for each line
-    this._updateSeriesScale();
   }
 
   /**
@@ -326,6 +325,53 @@ export class Chart extends EventEmitter {
     this._eachSeries(line => {
       line.setScale( this._currentYScale, this._localYScale );
     });
+  }
+
+  /**
+   * @private
+   */
+  _addEvents () {
+    this._renderer.on('resize', _ => {
+      this._onRendererResize();
+    });
+
+    this._eachSeries(line => {
+      line.on('visibleChange', _ => {
+        this._onSeriesVisibleChange( line );
+      });
+    });
+  }
+
+  /**
+   * @private
+   */
+  _setInitialRange () {
+    const globalMinX = this._xAxis[ 0 ];
+    const globalMaxX = this._xAxis[ this._xAxis.length - 1 ];
+    const difference = globalMaxX - globalMinX;
+    const initialViewport = Math.floor( difference * .25 );
+    const viewportPadding = Math.floor( initialViewport * .05 );
+
+    // set initial range
+    this.setRange( globalMaxX - initialViewport - viewportPadding, globalMaxX + viewportPadding );
+  }
+
+  /**
+   * @private
+   */
+  _onRendererResize () {
+  }
+
+  /**
+   * @param {Series} series
+   * @private
+   */
+  _onSeriesVisibleChange (series) {
+    // find new extremes and scale
+    this._updateExtremes();
+
+    // setup new scale for each line
+    this._updateSeriesScale();
   }
 
   /**

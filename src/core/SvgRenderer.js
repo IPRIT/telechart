@@ -1,6 +1,5 @@
 import { EventEmitter } from "./misc/EventEmitter";
 import {
-  ROOT_CLASS_NAME,
   capitalize,
   clampNumber,
   createElement,
@@ -193,6 +192,22 @@ export class SvgRenderer extends EventEmitter {
   }
 
   /**
+   * @param {string} selector
+   * @return {Element}
+   */
+  querySelector (selector) {
+    return this._svgContainer.querySelector( selector );
+  }
+
+  /**
+   * @param {string} selector
+   * @return {Array<Element>}
+   */
+  querySelectorAll (selector) {
+    return Array.from( this._svgContainer.querySelectorAll( selector ) );
+  }
+
+  /**
    * Destroy the renderer
    */
   destroy () {
@@ -219,6 +234,20 @@ export class SvgRenderer extends EventEmitter {
    */
   get svgContainer () {
     return this._svgContainer;
+  }
+
+  /**
+   * @return {number}
+   */
+  get width () {
+    return this._width;
+  }
+
+  /**
+   * @return {number}
+   */
+  get height () {
+    return this._height;
   }
 
   /**

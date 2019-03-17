@@ -39,9 +39,16 @@ console.log( chart, performance.now() - start );
 chart.setTheme( initialTheme );
 updatePageTheme();
 
-let buttonContent = chart.themeName === ChartThemes.dark
-  ? 'Switch to Day Mode'
-  : 'Switch to Night Mode';
+let buttonContent = `
+  <span class="text-switcher">
+    <span>Switch to </span>
+    <span class="text-switcher__switcher">
+      <span>Night</span>
+      <span>Day</span>
+    </span>
+    <span> Mode</span>
+  </span>
+`;
 
 const themeButton = createElement('button', {
   attrs: {
@@ -63,7 +70,7 @@ window.addEventListener('load', _ => {
 
     chart.setTheme( newTheme );
 
-    updateThemeButton();
+    updatePageTheme();
   });
 
   setTimeout(_ => {
@@ -76,16 +83,6 @@ window.addEventListener('load', _ => {
 });
 
 function updatePageTheme () {
-  addClass( document.body, `${chart.themeName}-theme` );
-}
-
-function updateThemeButton () {
-  buttonContent = chart.themeName === ChartThemes.dark
-    ? 'Switch to Day Mode'
-    : 'Switch to Night Mode';
-
   removeClass( document.body, [ 'default-theme', 'dark-theme' ] );
   addClass( document.body, `${chart.themeName}-theme` );
-
-  themeButton.innerHTML = buttonContent;
 }

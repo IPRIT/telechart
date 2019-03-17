@@ -21,6 +21,24 @@ body {
 
     & .demo-theme-button {
       background-color: rgba(white, .95);
+
+      .text-switcher {
+        &__switcher {
+          width: 42px;
+
+          span {
+            &:first-of-type {
+              transform: translateY(0) scale(1);
+              opacity: 1;
+            }
+
+            &:last-of-type {
+              transform: translateY(24px) scale(.95);
+              opacity: 0;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -32,6 +50,24 @@ body {
 
       &:active {
         color: lighten($link-color, 10);
+      }
+
+      .text-switcher {
+        &__switcher {
+          width: 32px;
+
+          span {
+            &:first-of-type {
+              transform: translateY(-24px) scale(.95);
+              opacity: 0;
+            }
+
+            &:last-of-type {
+              transform: translateY(0) scale(1);
+              opacity: 1;
+            }
+          }
+        }
       }
     }
   }
@@ -67,5 +103,41 @@ body {
     padding: 24px 16px 36px;
     bottom: 0;
     border-radius: 0;
+  }
+}
+
+.text-switcher {
+  white-space: nowrap;
+
+  > span {
+    display: inline-block;
+    vertical-align: top;
+  }
+
+  &__switcher {
+    display: inline-block;
+    width: 42px;
+    position: relative;
+    transition: width $primary-transition;
+    will-change: width;
+
+    span {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      transition: all $primary-transition;
+      will-change: transform;
+      transform-origin: 50% 50%;
+
+      &:first-of-type {
+        transform: translateY(0) scale(1);
+      }
+
+      &:last-of-type {
+        transform: translateY(24px) scale(.95);
+        opacity: 0;
+      }
+    }
   }
 }
