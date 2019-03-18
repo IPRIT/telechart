@@ -2,7 +2,4 @@
 @import "../themes/index";
 
 @include block('render', 'component') {
-  @media screen and (min-width: $tablet-width) {
-    box-shadow: inset 0 0 0 1px rgba(174, 174, 174, 0.2);
-  }
 }

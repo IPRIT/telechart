@@ -7,16 +7,41 @@ import {
   cssText, isBrowserSafari,
   parseQueryString,
   removeClass,
-  setAttributes
+  setAttributes, TimeRanges
 } from '../src/utils';
 
 const query = parseQueryString( location.search );
 let currentThemeName = query && query.theme || 'default';
 
+const largeAxisX = [ 'x' ];
+const largeAxisY1 = [ 'y0' ];
+const largeAxisY2 = [ 'y1' ];
+const size = 1e3;
+const initialDate = Date.now() - TimeRanges.year * 5;
+const endDate = Date.now();
+const dateTick = (endDate - initialDate) / size;
+
+for (let i = 0; i < size; ++i) {
+  largeAxisX.push( Math.floor( initialDate + dateTick * i + dateTick * (Math.random() * .5 - .5 / 2) ) );
+  largeAxisY1.push( Math.sin( i * .1 ) * 1000 );
+  largeAxisY2.push( Math.cos( i * .01 ) * 600 );
+}
+
+sourceData.push({
+  columns: [
+    largeAxisX,
+    largeAxisY1,
+    largeAxisY2
+  ],
+  names: Object.assign( {}, sourceData[ 0 ].names ),
+  types: Object.assign( {}, sourceData[ 0 ].types ),
+  colors: Object.assign( {}, sourceData[ 0 ].colors )
+});
+
 const charts = [];
 
 const from = 0;
-const count = 5;
+const count = 6;
 
 // initialize charts using requestAnimationFrame
 // for better user experience

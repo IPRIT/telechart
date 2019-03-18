@@ -1,7 +1,7 @@
 import { EventEmitter } from '../misc/EventEmitter';
 import { ChartTypes } from './ChartTypes';
 import { Series } from '../series/Series';
-import { binarySearchIndexes, isDate, TimeRanges } from '../../utils';
+import { binarySearchIndexes, clampNumber, isDate, TimeRanges } from '../../utils';
 
 export class Chart extends EventEmitter {
 
@@ -16,12 +16,6 @@ export class Chart extends EventEmitter {
    * @private
    */
   _options = null;
-
-  /**
-   * @type {number}
-   * @private
-   */
-  _chartWidth = 0;
 
   /**
    * @type {number}
@@ -58,6 +52,24 @@ export class Chart extends EventEmitter {
    * @private
    */
   _viewportRangeIndexes = [];
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _viewportLeftPaddingScale = 0;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _viewportRightPaddingScale = 0;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  _viewportRangeUpdateNeeded = false;
 
   /**
    * @type {number}
@@ -112,6 +124,12 @@ export class Chart extends EventEmitter {
    * @param {number} deltaTime
    */
   update (deltaTime) {
+    if (this._viewportRangeUpdateNeeded) {
+      this.updateViewportRange();
+
+      this._viewportRangeUpdateNeeded = false;
+    }
+
     this._eachSeries(line => {
       line.update( deltaTime );
     });
@@ -129,26 +147,10 @@ export class Chart extends EventEmitter {
    * @param {number|Date} maxX
    */
   setViewportRange (minX, maxX) {
-    const xAxis = this._xAxis;
+    // recompute X boundaries
+    this._setViewportRange( minX, maxX );
 
-    const globalMinX = xAxis[ 0 ];
-    const globalMaxX = xAxis[ xAxis.length - 1 ];
-
-    if (isDate( minX )) {
-      minX = minX.getTime();
-    }
-    if (isDate( maxX )) {
-      maxX = maxX.getTime();
-    }
-
-    const padding = this._computeViewportPixelX( minX, maxX ) * 16;
-
-    minX = Math.max( minX, globalMinX - padding );
-    maxX = Math.min( maxX, globalMaxX + padding );
-
-    this._viewportRange = [ minX, maxX ];
-
-    // recompute boundaries (indexes)
+    // recompute indexes range
     this._updateViewportIndexes();
 
     this._eachSeries(line => {
@@ -162,6 +164,22 @@ export class Chart extends EventEmitter {
 
     // update scales for each line
     this._updateSeriesScale();
+  }
+
+  /**
+   * Recompute key variables for viewport range
+   */
+  updateViewportRange () {
+    // recompute X boundaries
+    this._setViewportRange( this._viewportRange[ 0 ], this._viewportRange[ 1 ], true );
+
+    this._eachSeries(line => {
+      // update X viewport interval for line
+      line.setViewportRange( this._viewportRange, this._viewportRangeIndexes, false );
+
+      // update X pixel value
+      line.updateViewportPixel();
+    });
   }
 
   /**
@@ -224,7 +242,7 @@ export class Chart extends EventEmitter {
    * @return {number}
    */
   get chartWidth () {
-    return this._chartWidth;
+    return this._renderer.width;
   }
 
   /**
@@ -238,18 +256,10 @@ export class Chart extends EventEmitter {
    * @private
    */
   _initialize () {
-    this._updateDimensions();
     this._createSeriesGroup();
     this._createSeries();
     this._addEvents();
     this._setInitialRange();
-  }
-
-  /**
-   * @private
-   */
-  _updateDimensions () {
-    this._chartWidth = this._renderer.width;
   }
 
   /**
@@ -296,9 +306,7 @@ export class Chart extends EventEmitter {
       // prepare series settings
       const settings = {
         xAxis, yAxis, label, type,
-        color, name, options,
-        width: this.chartWidth,
-        height: this.chartHeight
+        color, name, options
       };
 
       // create instance
@@ -377,6 +385,50 @@ export class Chart extends EventEmitter {
   }
 
   /**
+   * @param {number | Date} minX
+   * @param {number | Date} maxX
+   * @param {boolean} preservePadding
+   * @private
+   */
+  _setViewportRange (minX, maxX, preservePadding = false) {
+    const xAxis = this._xAxis;
+
+    const globalMinX = xAxis[ 0 ];
+    const globalMaxX = xAxis[ xAxis.length - 1 ];
+
+    if (isDate( minX )) {
+      minX = minX.getTime();
+    }
+    if (isDate( maxX )) {
+      maxX = maxX.getTime();
+    }
+
+    let newMinX = Math.max( minX, globalMinX );
+    let newMaxX = Math.min( maxX, globalMaxX );
+
+    const actualPaddingX = this._computeViewportPadding( newMinX, newMaxX );
+
+    const receivedLeftPaddingX = clampNumber( newMinX - minX, 0, actualPaddingX );
+    const receivedRightPaddingX = clampNumber( maxX - newMaxX, 0, actualPaddingX );
+
+    if (!preservePadding) {
+      this._viewportLeftPaddingScale = receivedLeftPaddingX / actualPaddingX;
+    }
+    if (this._viewportLeftPaddingScale > 0) {
+      newMinX -= actualPaddingX * this._viewportLeftPaddingScale;
+    }
+
+    if (!preservePadding) {
+      this._viewportRightPaddingScale = receivedRightPaddingX / actualPaddingX;
+    }
+    if (this._viewportRightPaddingScale > 0) {
+      newMaxX += actualPaddingX * this._viewportRightPaddingScale;
+    }
+
+    this._viewportRange = [ newMinX, newMaxX ];
+  }
+
+  /**
    * @private
    */
   _addEvents () {
@@ -399,7 +451,10 @@ export class Chart extends EventEmitter {
     const globalMaxX = this._xAxis[ this._xAxis.length - 1 ];
     const difference = globalMaxX - globalMinX;
     const initialViewport = Math.floor( difference * 1 );
-    const viewportPadding = 0; // this._computeViewportPixelX( globalMaxX - initialViewport, globalMaxX ) * 16;
+    const viewportPadding = this._computeViewportPadding(
+      globalMaxX - initialViewport,
+      globalMaxX
+    );
 
     // set initial range
     this.setViewportRange(
@@ -412,7 +467,8 @@ export class Chart extends EventEmitter {
    * @private
    */
   _onRendererResize () {
-    this._updateDimensions();
+    // request for future animation update
+    this._viewportRangeUpdateNeeded = true;
   }
 
   /**
@@ -449,8 +505,18 @@ export class Chart extends EventEmitter {
    * @return {number}
    * @private
    */
-  _computeViewportPixelX (minX = this._xAxis[ 0 ], maxX = this._xAxis[ this._xAxis.length - 1 ]) {
-    return ( maxX - minX ) / this._chartWidth;
+  _computeViewportPixelX (minX = this._viewportRange[ 0 ], maxX = this._viewportRange[ 1 ]) {
+    return ( maxX - minX ) / this.chartWidth;
+  }
+
+  /**
+   * @param {number} localMinX
+   * @param {number} localMaxX
+   * @return {number}
+   * @private
+   */
+  _computeViewportPadding (localMinX, localMaxX) {
+    return this._computeViewportPixelX( localMinX, localMaxX ) * 16;
   }
 
   /**

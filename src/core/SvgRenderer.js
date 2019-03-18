@@ -339,8 +339,8 @@ export class SvgRenderer extends EventEmitter {
    * @private
    */
   _onResize (ev) {
-    this.emit( 'resize', ev );
     this._updateDimensions();
+    this.emit( 'resize', ev );
   }
 
   /**
