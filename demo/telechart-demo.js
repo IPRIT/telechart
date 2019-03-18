@@ -23,7 +23,7 @@ const count = 5;
 sourceData
   .slice(from, from + count)
   .map((chartData, index) => {
-    return animationTimeout( 20 * index, [ chartData, index ] );
+    return animationTimeout( 0 * 20 * index, [ chartData, index ] );
   })
   .map(animation => {
     animation.then(([ chartData, index ]) => createChart( chartData, index ));
@@ -126,12 +126,12 @@ function createChart (chartData, index) {
     },
     seriesOptions: {
       grouping: {
-        pixels: 2
+        pixels: 1
       }
     }
   });
 
-  console.log( `#${index}`, performance.now() - start );
+  console.log( `#${index}`, performance.now() - start, chart );
 
   // set initial theme
   chart.setTheme( currentThemeName );

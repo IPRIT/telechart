@@ -19,7 +19,7 @@ body {
     background-color: white;
 
     & .demo-theme-button {
-      background-color: rgba(white, .95);
+      background-color: rgba(white, .8);
 
       .text-switcher {
         &__switcher {
@@ -45,7 +45,7 @@ body {
     background-color: $dark-color;
 
     & .demo-theme-button {
-      background-color: rgba($dark-color, .95);
+      background-color: rgba($dark-color, .8);
 
       &:active {
         color: lighten($link-color, 10);
@@ -74,7 +74,7 @@ body {
 
 .demo-theme-button {
   color: $link-color;
-  background: rgba(white, .95);
+  background: rgba(white, .8);
   display: block;
   padding: 16px 24px;
   border-radius: 50px;
@@ -104,10 +104,10 @@ body {
     color: rgba($link-color, .7);
   }
 
-  @media screen and (max-width: 768px) {
+  @media screen and (max-width: $tablet-width) {
     cursor: default;
     width: 100%;
-    padding: 24px 16px 36px;
+    padding: 36px 16px;
     bottom: 0;
     border-radius: 0;
   }

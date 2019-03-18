@@ -32,6 +32,12 @@ export class Series extends EventEmitter {
   _pathElement = null;
 
   /**
+   * @type {boolean}
+   * @private
+   */
+  _pathUpdateNeeded = false;
+
+  /**
    * @type {SvgRenderer}
    * @private
    */
@@ -234,6 +240,18 @@ export class Series extends EventEmitter {
    * @param {number} deltaTime
    */
   update (deltaTime) {
+    if (this._viewportPointsGroupingNeeded) {
+      this.regroupViewportPoints();
+
+      this._viewportPointsGroupingNeeded = false;
+    }
+
+    if (this._pathUpdateNeeded) {
+      this.updateViewportPoints();
+      this.updatePath();
+
+      this._pathUpdateNeeded = false;
+    }
   }
 
   /**
@@ -243,6 +261,7 @@ export class Series extends EventEmitter {
     if (this._pathElement) {
       return;
     }
+
     // approximate viewport points for large data set
     this.regroupViewportPoints();
 
@@ -316,9 +335,11 @@ export class Series extends EventEmitter {
     this._viewportDistance = this._viewportRange[ 1 ] - this._viewportRange[ 0 ];
 
     if (!arraysEqual( rangeIndexes, oldRangeIndexes )) {
-      // mark as we need to re-compute approximation in next animation tick
-      this._viewportPixelUpdateNeeded = true;
+      // mark to re-compute approximation in next animation update
+      this._viewportPointsGroupingNeeded = true;
     }
+
+    this._pathUpdateNeeded = true;
 
     // update minY and maxY local values
     this._updateLocalExtremes();
@@ -337,19 +358,24 @@ export class Series extends EventEmitter {
     }
   }
 
+  /**
+   * Approximate points for better performance
+   */
   regroupViewportPoints () {
-    if (!this._viewportPointsGroupingNeeded) {
-      return;
-    }
+    let [ startIndex, endIndex ] = this._viewportRangeIndexes;
 
-    const [ startIndex, endIndex ] = this._viewportRangeIndexes;
+    startIndex = Math.max( 0, startIndex - 1 );
+    endIndex = Math.min( this._points.length - 1, endIndex + 1 );
 
     // if we have no enough points
     // then we don't need to approximate
     if (endIndex - startIndex < 100) {
       // just slice points from the original array
       // [ startIndex, endIndex ]
-      this._viewportPoints = this._points.slice( startIndex, endIndex + 1 );
+      this._viewportPoints = this._points.slice(
+        startIndex,
+        endIndex + 1
+      );
 
       // all work done here
       return;
@@ -382,7 +408,6 @@ export class Series extends EventEmitter {
       }
     }
 
-    this._viewportPointsGroupingNeeded = false;
     this._viewportPoints = viewportPoints;
   }
 
@@ -401,6 +426,14 @@ export class Series extends EventEmitter {
   updateViewportPixel () {
     this._viewportPixelX = this._viewportDistance / this._chartWidth;
     this._viewportPixelY = this._chart.globalExtremeDifference / this._chartHeight;
+  }
+
+  /**
+   * Recompute path text
+   */
+  updatePath () {
+    this._pathText = this._computePathText( this._viewportPoints );
+    this._renderer.updatePath( this._pathElement, this._pathText );
   }
 
   /**
@@ -622,6 +655,9 @@ export class Series extends EventEmitter {
    */
   _onRendererResize () {
     this._updateDimensions();
+
+    this._pathUpdateNeeded = true;
+    this._viewportPointsGroupingNeeded = true;
   }
 
   /**
@@ -655,13 +691,13 @@ export class Series extends EventEmitter {
       return result;
     }
 
-    result += 'M ';
+    result += 'M';
 
     for (let i = 0; i < points.length; ++i) {
       const point = points[ i ];
 
       if (i !== 0) {
-        result += 'L ';
+        result += 'L';
       }
 
       result += [ point.svgX, point.svgY ].join(' ') + ' ';

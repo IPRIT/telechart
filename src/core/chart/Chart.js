@@ -21,7 +21,13 @@ export class Chart extends EventEmitter {
    * @type {number}
    * @private
    */
-  _height = 250; // chart height will be constant
+  _chartWidth = 0;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _chartHeight = 250; // chart height will be constant
 
   /**
    * @type {Array<number>}
@@ -106,6 +112,9 @@ export class Chart extends EventEmitter {
    * @param {number} deltaTime
    */
   update (deltaTime) {
+    this._eachSeries(line => {
+      line.update( deltaTime );
+    });
   }
 
   /**
@@ -132,7 +141,7 @@ export class Chart extends EventEmitter {
       maxX = maxX.getTime();
     }
 
-    const padding = ( maxX - minX ) * .05;
+    const padding = this._computeViewportPixelX( minX, maxX ) * 16;
 
     minX = Math.max( minX, globalMinX - padding );
     maxX = Math.min( maxX, globalMaxX + padding );
@@ -215,24 +224,32 @@ export class Chart extends EventEmitter {
    * @return {number}
    */
   get chartWidth () {
-    return this._renderer.width;
+    return this._chartWidth;
   }
 
   /**
    * @return {number}
    */
   get chartHeight () {
-    return this._height;
+    return this._chartHeight;
   }
 
   /**
    * @private
    */
   _initialize () {
+    this._updateDimensions();
     this._createSeriesGroup();
     this._createSeries();
     this._addEvents();
     this._setInitialRange();
+  }
+
+  /**
+   * @private
+   */
+  _updateDimensions () {
+    this._chartWidth = this._renderer.width;
   }
 
   /**
@@ -381,17 +398,21 @@ export class Chart extends EventEmitter {
     const globalMinX = this._xAxis[ 0 ];
     const globalMaxX = this._xAxis[ this._xAxis.length - 1 ];
     const difference = globalMaxX - globalMinX;
-    const initialViewport = Math.floor( difference );
-    const viewportPadding = Math.floor( initialViewport * .05 );
+    const initialViewport = Math.floor( difference * 1 );
+    const viewportPadding = 0; // this._computeViewportPixelX( globalMaxX - initialViewport, globalMaxX ) * 16;
 
     // set initial range
-    this.setViewportRange( globalMaxX - initialViewport - viewportPadding, globalMaxX + viewportPadding );
+    this.setViewportRange(
+      globalMaxX - initialViewport - viewportPadding,
+      globalMaxX + viewportPadding
+    );
   }
 
   /**
    * @private
    */
   _onRendererResize () {
+    this._updateDimensions();
   }
 
   /**
@@ -420,6 +441,16 @@ export class Chart extends EventEmitter {
     }
 
     return localHeight / globalHeight;
+  }
+
+  /**
+   * @param {number} minX
+   * @param {number} maxX
+   * @return {number}
+   * @private
+   */
+  _computeViewportPixelX (minX = this._xAxis[ 0 ], maxX = this._xAxis[ this._xAxis.length - 1 ]) {
+    return ( maxX - minX ) / this._chartWidth;
   }
 
   /**
