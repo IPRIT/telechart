@@ -140,12 +140,6 @@ export class Series extends EventEmitter {
   _viewportPixelY = 0;
 
   /**
-   * @type {boolean}
-   * @private
-   */
-  _viewportPixelUpdateNeeded = true;
-
-  /**
    * @type {Array<number>}
    * @private
    */
@@ -186,18 +180,6 @@ export class Series extends EventEmitter {
    * @private
    */
   _localMinY = 0;
-
-  /**
-   * @type {number}
-   * @private
-   */
-  _currentYScale = 1;
-
-  /**
-   * @type {number}
-   * @private
-   */
-  _localYScale = 1;
 
   /**
    * @param {SvgRenderer} renderer
@@ -323,17 +305,21 @@ export class Series extends EventEmitter {
     this._viewportRangeIndexes = rangeIndexes;
     this._viewportDistance = this._viewportRange[ 1 ] - this._viewportRange[ 0 ];
 
-    if (!arraysEqual( rangeIndexes, oldRangeIndexes ) && oldRangeIndexes.length > 0) {
-      // mark to re-compute approximation in next animation update
-      this._viewportPointsGroupingNeeded = true;
+    if (!arraysEqual( rangeIndexes, oldRangeIndexes )) {
+      // do not recompute groups while first render
+      if (oldRangeIndexes.length > 0) {
+        // recompute approximation in next animation update
+        this.requestPointsApproximation();
+      }
+
+      if (updateExtremes) {
+        // update minY and maxY local values
+        this._updateLocalExtremes();
+      }
     }
 
-    this._pathUpdateNeeded = true;
-
-    if (updateExtremes) {
-      // update minY and maxY local values
-      this._updateLocalExtremes();
-    }
+    // recompute path coordinates in next animation update
+    this.requestPathUpdate();
   }
 
   /**
@@ -372,19 +358,13 @@ export class Series extends EventEmitter {
       return;
     }
 
-    const localMinMaxDistanceX = this._xAxis[ endIndex ] - this._xAxis[ startIndex ];
-    const localMinMaxDistanceY = this._chart.localExtremeDifference;
-
     const boostLimit = 500;
-    const boostScale = this._xAxis.length > boostLimit
-      ? Math.max(0, ( endIndex - startIndex ) / this._xAxis.length ) / boostLimit * 5
+    const boostScale = 1 + this._xAxis.length > boostLimit
+      ? Math.max(0, ( endIndex - startIndex ) / this._xAxis.length ) * 2
       : 0;
 
-    const additionalApproximationDistanceX = localMinMaxDistanceX * boostScale;
-    const additionalApproximationDistanceY = localMinMaxDistanceY * boostScale;
-
-    let groupingDistanceLimitX = this._groupingPixels * this._viewportPixelX + additionalApproximationDistanceX;
-    let groupingDistanceLimitY = this._groupingPixels * this._viewportPixelY + additionalApproximationDistanceY;
+    let groupingDistanceLimitX = boostScale * this._groupingPixels * this._viewportPixelX;
+    let groupingDistanceLimitY = boostScale * this._groupingPixels * this._viewportPixelY;
 
     let viewportPoints = [];
     let groupStartIndex = startIndex;
@@ -421,20 +401,11 @@ export class Series extends EventEmitter {
   }
 
   /**
-   * @param {number} currentYScale
-   * @param {number} desiredYScale
-   */
-  setScale (currentYScale, desiredYScale) {
-    this._currentYScale = currentYScale;
-    this._localYScale = desiredYScale;
-  }
-
-  /**
    * Updates pixel value for each axis
    */
   updateViewportPixel () {
     this._viewportPixelX = this._viewportDistance / this._chart.chartWidth;
-    this._viewportPixelY = this._chart.globalExtremeDifference / this._chart.chartHeight;
+    this._viewportPixelY = this._chart.currentLocalExtremeDifference / this._chart.chartHeight;
   }
 
   /**
@@ -534,13 +505,6 @@ export class Series extends EventEmitter {
    */
   get localMaxY () {
     return this._localMaxY;
-  }
-
-  /**
-   * @return {boolean}
-   */
-  get viewportPixelUpdateNeeded () {
-    return this._viewportPixelUpdateNeeded;
   }
 
   /**
@@ -652,12 +616,7 @@ export class Series extends EventEmitter {
    * @private
    */
   _projectYToSvg (y) {
-    return this._chart.chartHeight
-      - (
-        y - this._chart.localMinY
-      ) / (
-        this._viewportPixelY * this._currentYScale
-      );
+    return this._chart.chartHeight - ( y - this._chart.currentLocalMinY ) / this._viewportPixelY;
   }
 
   /**

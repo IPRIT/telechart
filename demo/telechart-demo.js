@@ -23,8 +23,8 @@ const dateTick = (endDate - initialDate) / size;
 
 for (let i = 0; i < size; ++i) {
   largeAxisX.push( Math.floor( initialDate + dateTick * i + dateTick * (Math.random() * .5 - .5 / 2) ) );
-  largeAxisY1.push( Math.sin( i * .1 ) * 1000 );
-  largeAxisY2.push( Math.cos( i * .01 ) * 600 );
+  largeAxisY1.push( Math.sin( i * .004 ) * 1000 + Math.random() * 10 - 10 / 2 );
+  largeAxisY2.push( Math.cos( i * .004 ) * 600 + Math.random() * 20 - 20 / 2 );
 }
 
 sourceData.push({
@@ -38,7 +38,7 @@ sourceData.push({
   colors: Object.assign( {}, sourceData[ 0 ].colors )
 });
 
-const charts = [];
+const charts = window.charts = [];
 
 const from = 0;
 const count = 6;
@@ -83,6 +83,8 @@ window.addEventListener('load', _ => {
   themeButton.addEventListener('click', ev => {
     updateChartsTheme();
     updatePageTheme();
+
+    demo();
   });
 
   setTimeout(_ => {
@@ -151,7 +153,7 @@ function createChart (chartData, index) {
     },
     seriesOptions: {
       grouping: {
-        pixels: 1
+        pixels: 2
       }
     }
   });
@@ -162,4 +164,26 @@ function createChart (chartData, index) {
   chart.setTheme( currentThemeName );
 
   charts.push( chart );
+}
+
+function demo () {
+  const chart = charts[ 0 ];
+  let startDate = chart._chart._xAxis[ 0 ];
+  let endDate = chart._chart._xAxis[ chart._chart._xAxis.length - 1 ];
+  let curDate = endDate - (endDate - startDate) * .23;
+  const tickDelta = (endDate - startDate) * .01;
+  let sign = -1;
+  function animate () {
+    curDate += sign * tickDelta;
+    chart._chart.setViewportRange( curDate, Infinity );
+
+    if (curDate < startDate + 2 * tickDelta) {
+      sign *= -1;
+    } else if (curDate > endDate - tickDelta * 2) {
+      sign *= -1;
+    }
+
+    requestAnimationFrame( animate );
+  }
+  animate();
 }

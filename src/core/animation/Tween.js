@@ -173,6 +173,10 @@ export class Tween extends EventEmitter {
     this._dispose();
   }
 
+  patchAnimation () {
+    // todo
+  }
+
   /**
    * @param {number} timeScale
    */

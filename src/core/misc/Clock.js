@@ -15,7 +15,7 @@ export class Clock {
    */
   getDelta () {
     const now = this.now;
-    const delta = now - this._lastUpdateMs;
+    const delta = ( now - this._lastUpdateMs ) / 1000;
     this._lastUpdateMs = now;
 
     return delta;
