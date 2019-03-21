@@ -33,8 +33,7 @@ module.exports = {
         options: {
           presets: [
             ['@babel/preset-env', {
-              "loose": true,
-              "targets": "> 0.25%, not dead"
+              "loose": true
             }]
           ]
         }

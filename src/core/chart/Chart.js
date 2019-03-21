@@ -58,7 +58,7 @@ export class Chart extends EventEmitter {
    * @type {Array<number>}
    * @private
    */
-  _viewportPointsIndexes = [];
+  _viewportPointsIndexes = [ 0, 0 ];
 
   /**
    * @type {boolean}
@@ -456,7 +456,8 @@ export class Chart extends EventEmitter {
     if (endIndex - startIndex < 400) {
       // just save indexes of points for increase performance
       // [ startIndex, endIndex ]
-      this._viewportPointsIndexes = [ startIndex, endIndex ];
+      this._viewportPointsIndexes[ 0 ] = startIndex;
+      this._viewportPointsIndexes[ 1 ] = endIndex;
       this._useViewportPointsInterval = true;
 
       // all work done here

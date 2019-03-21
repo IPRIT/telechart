@@ -24,9 +24,11 @@ module.exports = {
         exclude: /node_modules/,
         loader: 'babel-loader',
         options: {
-          presets: ['@babel/preset-env', {
-            "loose": true
-          }]
+          presets: [
+            ['@babel/preset-env', {
+              "loose": true
+            }]
+          ]
         }
       },
       {
