@@ -4,7 +4,7 @@ import {
   addClass, animationTimeout,
   ChartThemes, ChartThemesColors,
   createElement,
-  cssText, isBrowserSafari,
+  cssText, isBrowserSafari, isTouchEventsSupported,
   parseQueryString,
   removeClass,
   setAttributes, TimeRanges
@@ -83,8 +83,6 @@ window.addEventListener('load', _ => {
   themeButton.addEventListener('click', ev => {
     updateChartsTheme();
     updatePageTheme();
-
-    demo();
   });
 
   setTimeout(_ => {
@@ -166,13 +164,16 @@ function createChart (chartData, index) {
   charts.push( chart );
 }
 
-function demo () {
-  const chart = charts[ 0 ];
+const animations = [];
+
+function runAnimation (index) {
+  const chart = charts[ index ];
   let startDate = chart._chart._xAxis[ 0 ];
   let endDate = chart._chart._xAxis[ chart._chart._xAxis.length - 1 ];
   let curDate = endDate - (endDate - startDate) * .23;
   const tickDelta = (endDate - startDate) * .01;
   let sign = -1;
+
   function animate () {
     curDate += sign * tickDelta;
     chart._chart.setViewportRange( curDate, Infinity );
@@ -183,7 +184,28 @@ function demo () {
       sign *= -1;
     }
 
+    // stop animation
+    if (!animations.includes( index )) {
+      return;
+    }
+
     requestAnimationFrame( animate );
   }
+
+  animations.push( index );
+
   animate();
 }
+
+function stopAnimation (index) {
+  const i = animations.indexOf( index );
+  animations.splice( i, 1 );
+}
+
+function toggleAnimation (index) {
+  animations.includes( index )
+    ? stopAnimation( index )
+    : runAnimation( index );
+}
+
+window.toggleAnimation = toggleAnimation;

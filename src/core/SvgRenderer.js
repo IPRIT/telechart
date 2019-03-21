@@ -4,7 +4,7 @@ import {
   clampNumber,
   createElement,
   getElementWidth,
-  resolveElement,
+  resolveElement, setAttributeNS,
   setAttributes,
   setAttributesNS
 } from "../utils";
@@ -162,11 +162,10 @@ export class SvgRenderer extends EventEmitter {
 
   /**
    * @param {SVGPathElement} pathElement
-   * @param {Object} updatingAttrs
+   * @param {string} pathText
    */
-  updatePath (pathElement, pathText, updatingAttrs = {}) {
-    updatingAttrs.d = pathText;
-    setAttributesNS( pathElement, updatingAttrs, null );
+  updatePath (pathElement, pathText) {
+    setAttributeNS( pathElement, 'd', pathText, null );
   }
 
   /**

@@ -1,7 +1,7 @@
 import { EventEmitter } from '../misc/EventEmitter';
 import { ChartTypes } from './ChartTypes';
 import { Series } from '../series/Series';
-import { binarySearchIndexes, clampNumber, cssText, isDate, TimeRanges } from '../../utils';
+import { arraysEqual, binarySearchIndexes, clampNumber, cssText, ensureNumber, isDate, TimeRanges } from '../../utils';
 import { Tween, TweenEvents } from '../animation/Tween';
 
 export class Chart extends EventEmitter {
@@ -55,6 +55,36 @@ export class Chart extends EventEmitter {
   _viewportRangeIndexes = [];
 
   /**
+   * @type {Array<number>}
+   * @private
+   */
+  _viewportPointsIndexes = [];
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  _useViewportPointsInterval = false;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _viewportDistance = 0;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _viewportPixelX = 0;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _viewportPixelY = 0;
+
+  /**
    * @type {number}
    * @private
    */
@@ -73,16 +103,10 @@ export class Chart extends EventEmitter {
   _viewportRangeUpdateNeeded = false;
 
   /**
-   * @type {number}
+   * @type {boolean}
    * @private
    */
-  _globalMinY = 0;
-
-  /**
-   * @type {number}
-   * @private
-   */
-  _globalMaxY = 0;
+  _viewportPointsGroupingNeeded = false;
 
   /**
    * @type {number}
@@ -115,6 +139,13 @@ export class Chart extends EventEmitter {
   _minMaxYAnimation = null;
 
   /**
+   * @type {number}
+   * @private
+   * @default 2
+   */
+  _groupingPixels = 2;
+
+  /**
    * @param {SvgRenderer} renderer
    * @param {Object} options
    */
@@ -145,9 +176,18 @@ export class Chart extends EventEmitter {
       this._viewportRangeUpdateNeeded = false;
     }
 
+    if (this._viewportPointsGroupingNeeded) {
+      this._approximateViewportPoints();
+
+      this._viewportPointsGroupingNeeded = false;
+    }
+
+    if (extremesUpdated) {
+      this._updateViewportPixel();
+    }
+
     this._eachSeries(line => {
       if (extremesUpdated) {
-        line.updateViewportPixel();
         line.requestPathUpdate();
       }
 
@@ -165,26 +205,51 @@ export class Chart extends EventEmitter {
   /**
    * @param {number|Date} minX
    * @param {number|Date} maxX
+   * @param {boolean} skipExtremes
+   * @param {boolean} preservePadding
    */
-  setViewportRange (minX, maxX) {
+  setViewportRange (minX, maxX, { skipExtremes = false, preservePadding = false } = {}) {
     // recompute X boundaries
-    this._setViewportRange( minX, maxX );
+    this._setViewportRange( minX, maxX, preservePadding );
+
+    // remember last indexes
+    const oldRangeIndexes = this._viewportRangeIndexes;
 
     // recompute indexes range
     this._updateViewportIndexes();
 
+    let localExtremesUpdateRequested = false;
+
+    if (!arraysEqual( this._viewportRangeIndexes, oldRangeIndexes )) {
+      // do not recompute groups while first render
+      if (oldRangeIndexes.length > 0) {
+        // recompute approximation in next animation update
+        this._viewportPointsGroupingNeeded = true;
+      }
+
+      localExtremesUpdateRequested = true;
+    }
+
+    const updateExtremes = !skipExtremes && localExtremesUpdateRequested;
+
     this._eachSeries(line => {
-      // set X viewport interval for line
-      line.setViewportRange( this._viewportRange, this._viewportRangeIndexes );
+      // update local extremes only if indexes range changed
+      if (updateExtremes) {
+        // update minY and maxY local values for each line
+        line.updateLocalExtremes();
+      }
+
+      // recompute and repaint path in next animation update
+      line.requestPathUpdate();
     });
 
-    // update global and local extremes
-    this._updateExtremes();
+    if (updateExtremes) {
+      // update local extremes on chart level
+      this._updateLocalExtremes();
+    }
 
-    // recompute pixel value
-    this._eachSeries(line => {
-      line.updateViewportPixel();
-    });
+    // recompute pixel value (e.g. for animation)
+    this._updateViewportPixel();
   }
 
   /**
@@ -192,15 +257,13 @@ export class Chart extends EventEmitter {
    */
   updateViewportRange () {
     // recompute X boundaries
-    this._setViewportRange( this._viewportRange[ 0 ], this._viewportRange[ 1 ], true );
-
-    this._eachSeries(line => {
-      // update X viewport interval for line
-      line.setViewportRange( this._viewportRange, this._viewportRangeIndexes, false );
-
-      // update X pixel value
-      line.updateViewportPixel();
-    });
+    this.setViewportRange(
+      this._viewportRange[ 0 ],
+      this._viewportRange[ 1 ], {
+        skipExtremes: true,
+        preservePadding: true
+      }
+    );
   }
 
   /**
@@ -215,13 +278,6 @@ export class Chart extends EventEmitter {
    */
   get viewportRangeIndexes () {
     return this._viewportRangeIndexes;
-  }
-
-  /**
-   * @return {number}
-   */
-  get globalExtremeDifference () {
-    return this._globalMaxY - this._globalMinY;
   }
 
   /**
@@ -269,20 +325,6 @@ export class Chart extends EventEmitter {
   /**
    * @return {number}
    */
-  get globalMinY () {
-    return this._globalMinY;
-  }
-
-  /**
-   * @return {number}
-   */
-  get globalMaxY () {
-    return this._globalMaxY;
-  }
-
-  /**
-   * @return {number}
-   */
   get chartWidth () {
     return this._renderer.width;
   }
@@ -307,8 +349,11 @@ export class Chart extends EventEmitter {
   _initialize () {
     this._createSeriesGroup();
     this._createSeries();
+
     this._addEvents();
+
     this._setInitialRange();
+    this._approximateViewportPoints();
   }
 
   /**
@@ -352,6 +397,13 @@ export class Chart extends EventEmitter {
       seriesOptions: options = {}
     } = this._options || {};
 
+    const groupingOptions = options.grouping;
+    if (groupingOptions) {
+      if (groupingOptions.pixels) {
+        this._groupingPixels = ensureNumber( groupingOptions.pixels );
+      }
+    }
+
     const {
       columns,
       types,
@@ -391,6 +443,66 @@ export class Chart extends EventEmitter {
   }
 
   /**
+   * Approximate points for better performance
+   */
+  _approximateViewportPoints () {
+    let [ startIndex, endIndex ] = this._viewportRangeIndexes;
+
+    startIndex = Math.max( 0, startIndex - 1 );
+    endIndex = Math.min( this._xAxis.length - 1, endIndex + 1 );
+
+    // if we have no enough points
+    // then we don't need to approximate
+    if (endIndex - startIndex < 400) {
+      // just save indexes of points for increase performance
+      // [ startIndex, endIndex ]
+      this._viewportPointsIndexes = [ startIndex, endIndex ];
+      this._useViewportPointsInterval = true;
+
+      // all work done here
+      return;
+    }
+
+    const boostLimit = 500;
+    const boostScale = 1 + this._xAxis.length > boostLimit
+      ? Math.max(0, ( endIndex - startIndex ) / this._xAxis.length ) * 2
+      : 0;
+
+    let groupingDistanceLimitX = boostScale * this._groupingPixels * this._viewportPixelX;
+
+    let viewportIndexes = [];
+    let groupStartIndex = startIndex;
+
+    for (let i = startIndex + 1; i <= endIndex; ++i) {
+      const pointX = this._xAxis[ i ];
+
+      const groupStartDifferenceX = pointX - this._xAxis[ groupStartIndex ];
+
+      if (groupStartDifferenceX >= groupingDistanceLimitX || i === endIndex) {
+        if (groupStartIndex !== i - 1) {
+          // we have 2 or more points to group
+          // [ startIndex, lastIndex ] all indexes inclusive
+          const endIndex = i - 1;
+          const middleIndex = ( groupStartIndex + endIndex ) >> 1;
+          viewportIndexes.push( middleIndex );
+        } else {
+          if (startIndex === i - 1) {
+            // add first point
+            viewportIndexes.push( startIndex );
+          }
+
+          viewportIndexes.push( i );
+        }
+
+        groupStartIndex = i;
+      }
+    }
+
+    this._viewportPointsIndexes = viewportIndexes;
+    this._useViewportPointsInterval = false;
+  }
+
+  /**
    * @private
    */
   _updateViewportIndexes () {
@@ -404,21 +516,11 @@ export class Chart extends EventEmitter {
   /**
    * @private
    */
-  _updateExtremes () {
+  _updateLocalExtremes () {
     let localMinY = 0;
     let localMaxY = 0;
-    let globalMinY = 0;
-    let globalMaxY = 0;
 
     this._eachSeries(line => {
-      // todo: unnecessary
-      if (globalMinY > line.globalMinY) {
-        globalMinY = line.globalMinY;
-      }
-      if (globalMaxY < line.globalMaxY) {
-        globalMaxY = line.globalMaxY;
-      }
-
       if (!line.isVisible) {
         // filter only visible series
         return;
@@ -438,9 +540,6 @@ export class Chart extends EventEmitter {
     this._localMinY = localMinY;
     this._localMaxY = localMaxY;
 
-    this._globalMinY = globalMinY;
-    this._globalMaxY = globalMaxY;
-
     let updateAnimation = false;
 
     if (typeof this._currentLocalMinY !== 'number') {
@@ -458,8 +557,20 @@ export class Chart extends EventEmitter {
     }
 
     if (updateAnimation) {
-      this._createMinMaxYAnimation();
+      if (this._minMaxYAnimation) {
+        this._patchMinMaxYAnimation();
+      } else {
+        this._createMinMaxYAnimation();
+      }
     }
+  }
+
+  /**
+   * Updates pixel value for each axis
+   */
+  _updateViewportPixel () {
+    this._viewportPixelX = this._viewportDistance / this.chartWidth;
+    this._viewportPixelY = this.currentLocalExtremeDifference / this.chartHeight;
   }
 
   /**
@@ -504,6 +615,7 @@ export class Chart extends EventEmitter {
     }
 
     this._viewportRange = [ newMinX, newMaxX ];
+    this._viewportDistance = newMaxX - newMinX;
   }
 
   /**
@@ -546,9 +658,7 @@ export class Chart extends EventEmitter {
    */
   _createMinMaxYAnimation () {
     if (this._minMaxYAnimation) {
-      console.log( this._minMaxYAnimation.id, 'cancelled' );
       this._minMaxYAnimation.cancel();
-      this._minMaxYAnimation = null;
     }
 
     this._minMaxYAnimation = new Tween(this, [
@@ -570,14 +680,28 @@ export class Chart extends EventEmitter {
       // console.log( this._minMaxYAnimation.id, 'complete' );
       this._minMaxYAnimation = null;
     });
+
+    this._minMaxYAnimation.on(TweenEvents.CANCELLED, _ => {
+      // console.log( this._minMaxYAnimation.id, 'cancelled' );
+      this._minMaxYAnimation = null;
+    });
+  }
+
+  /**
+   * @private
+   */
+  _patchMinMaxYAnimation () {
+    // todo: workaround for now
+    this._createMinMaxYAnimation();
   }
 
   /**
    * @private
    */
   _onRendererResize () {
-    // request for future animation update
+    // making request for future animation update
     this._viewportRangeUpdateNeeded = true;
+    this._viewportPointsGroupingNeeded = true;
   }
 
   /**
@@ -586,7 +710,7 @@ export class Chart extends EventEmitter {
    */
   _onSeriesVisibleChange (line) {
     // find new extremes and scale
-    this._updateExtremes();
+    this._updateLocalExtremes();
   }
 
   /**

@@ -186,6 +186,19 @@ export function setAttributesNS (element, attrs = {}, ns = null) {
 
 /**
  * @param {Element} element
+ * @param {string} attr
+ * @param {*} value
+ * @param {string | *} ns
+ */
+export function setAttributeNS (element, attr, value, ns) {
+  // it's a magic but it increases speed for 1-2ms on slow devices
+  // prevent from babel optimisation
+  ns = ns || null;
+  element.setAttributeNS( ns, attr, value );
+}
+
+/**
+ * @param {Element} element
  * @param {string} className
  */
 export function hasClass (element, className) {
