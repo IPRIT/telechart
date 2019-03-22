@@ -84,7 +84,7 @@ body {
   font-size: 20px;
   outline: none;
   cursor: pointer;
-  transition: background-color $primary-transition, opacity $primary-transition;
+  transition: background-color $primary-transition, opacity $primary-transition, color $primary-transition;
   position: fixed;
   bottom: 16px;
   left: 50%;
