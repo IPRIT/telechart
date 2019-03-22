@@ -34,7 +34,7 @@ export class NavigatorChart extends BaseChart {
   createSeriesGroup () {
     this._seriesGroup = this.renderer.createGroup({
       class: 'telechart-navigator-series-group',
-      transform: `translate(0, 358) scale(1 1)`,
+      transform: `translate(0, 388) scale(1 1)`,
       mask: `url(#${this.chartMaskId})`
     });
 

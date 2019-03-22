@@ -23,8 +23,8 @@ const dateTick = (endDate - initialDate) / size;
 
 for (let i = 0; i < size; ++i) {
   largeAxisX.push( Math.floor( initialDate + dateTick * i + dateTick * (Math.random() * .5 - .5 / 2) ) );
-  largeAxisY1.push( Math.sin( i * .004 ) * 1000 + Math.random() * 10 - 10 / 2 );
-  largeAxisY2.push( Math.cos( i * .004 ) * 600 + Math.random() * 20 - 20 / 2 );
+  largeAxisY1.push( Math.sin( i * .04 ) * 1000 + Math.random() * 10 - 10 / 2 );
+  largeAxisY2.push( Math.cos( i * .04 ) * 600 + Math.random() * 20 - 20 / 2 );
 }
 
 sourceData.push({

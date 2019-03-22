@@ -1,7 +1,7 @@
 import { EventEmitter } from '../misc/EventEmitter';
 import { SeriesTypes } from '../series/SeriesTypes';
 import { Series } from '../series/Series';
-import { arraysEqual, binarySearchIndexes, clampNumber, ensureNumber, isDate } from '../../utils';
+import { arraysEqual, binarySearchIndexes, clampNumber, ensureNumber, isDate, setAttributeNS } from '../../utils';
 import { Tween, TweenEvents } from '../animation/Tween';
 import { ChartTypes } from './ChartTypes';
 import { ChartEvents } from './ChartEvents';
@@ -38,7 +38,7 @@ export class BaseChart extends EventEmitter {
    * @type {number}
    * @private
    */
-  _chartHeight = 250;
+  _chartHeight = 280;
 
   /**
    * @type {number}
@@ -238,7 +238,10 @@ export class BaseChart extends EventEmitter {
     }
 
     this.eachSeries(line => {
-      if (extremesUpdated) {
+      const hasOpacityAnimation = !!line.opacityAnimationType;
+      const isNavigatorPath = this._type === ChartTypes.navigatorChart;
+
+      if (extremesUpdated && !(isNavigatorPath && hasOpacityAnimation)) {
         line.requestPathUpdate();
       }
 
@@ -594,6 +597,8 @@ export class BaseChart extends EventEmitter {
     // making request for future animation update
     this._viewportRangeUpdateNeeded = true;
     this._viewportPointsGroupingNeeded = true;
+
+    this._updateMaskDimensions()
   }
 
   /**
@@ -663,7 +668,7 @@ export class BaseChart extends EventEmitter {
    */
   eachSeries (fn = () => {}) {
     for (let i = 0; i < this._series.length; ++i) {
-      fn( this._series[ i ] );
+      fn( this._series[ i ], i );
     }
   }
 
@@ -876,17 +881,14 @@ export class BaseChart extends EventEmitter {
       timingFunction: 'easeInOutQuad'
     });
 
+    const onFinished = _ => {
+      this._minMaxYAnimation = null;
+    };
+
+    this._minMaxYAnimation.on( TweenEvents.COMPLETE, onFinished );
+    this._minMaxYAnimation.on( TweenEvents.CANCELLED, onFinished );
+
     this._minMaxYAnimation.start();
-
-    this._minMaxYAnimation.on(TweenEvents.COMPLETE, _ => {
-      // console.log( this._minMaxYAnimation.id, 'complete' );
-      this._minMaxYAnimation = null;
-    });
-
-    this._minMaxYAnimation.on(TweenEvents.CANCELLED, _ => {
-      // console.log( this._minMaxYAnimation.id, 'cancelled' );
-      this._minMaxYAnimation = null;
-    });
   }
 
   /**
@@ -901,5 +903,16 @@ export class BaseChart extends EventEmitter {
       this._localMinY - this._currentLocalMinY,
       this._localMaxY - this._currentLocalMaxY
     ]);*/
+  }
+
+  /**
+   * @private
+   */
+  _updateMaskDimensions () {
+    if (!this._chartMask) {
+      return;
+    }
+    const rect = this._chartMask.querySelector( 'rect' );
+    setAttributeNS( rect, 'width', this.chartWidth, null );
   }
 }

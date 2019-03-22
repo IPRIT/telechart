@@ -1,9 +1,15 @@
 import { EventEmitter } from '../misc/EventEmitter';
-import { arrayMinMax, arraysEqual } from '../../utils';
+import { arrayMinMax, arraysEqual, setAttributeNS } from '../../utils';
 import { Point } from '../point/Point';
 import { PointGroup } from '../point/PointGroup';
+import { Tween, TweenEvents } from '../animation/Tween';
 
 let SERIES_AUTOINCREMENT = 1;
+
+const OpacityAnimationType = {
+  hiding: 1,
+  showing: 2
+};
 
 export class Series extends EventEmitter {
 
@@ -128,6 +134,24 @@ export class Series extends EventEmitter {
   _localMinY = 0;
 
   /**
+   * @type {number}
+   * @private
+   */
+  _opacity = 1;
+
+  /**
+   * @type {Tween}
+   * @private
+   */
+  _opacityAnimation = null;
+
+  /**
+   * @type {string}
+   * @private
+   */
+  _opacityAnimationType = null;
+
+  /**
    * @param {SvgRenderer} renderer
    * @param {Element} parent
    * @param {*} settings
@@ -158,6 +182,12 @@ export class Series extends EventEmitter {
       this.updatePath();
 
       this._pathUpdateNeeded = false;
+    }
+
+    if (this._opacityAnimation
+      && this._opacityAnimation.isRunning) {
+      this._opacityAnimation.update( deltaTime );
+      this.updatePathOpacity();
     }
   }
 
@@ -191,6 +221,7 @@ export class Series extends EventEmitter {
    */
   setVisible () {
     this._visible = true;
+    this._createShowingAnimation();
 
     this.emit( 'visibleChange', this._visible );
   }
@@ -200,6 +231,7 @@ export class Series extends EventEmitter {
    */
   setInvisible () {
     this._visible = false;
+    this._createHidingAnimation();
 
     this.emit( 'visibleChange', this._visible );
   }
@@ -275,6 +307,13 @@ export class Series extends EventEmitter {
   }
 
   /**
+   * Recompute path text
+   */
+  updatePathOpacity () {
+    setAttributeNS( this._pathElement, 'opacity', this._opacity, null );
+  }
+
+  /**
    * Mark to update path in next animation frame
    */
   requestPathUpdate () {
@@ -314,6 +353,27 @@ export class Series extends EventEmitter {
    */
   get localMaxY () {
     return this._localMaxY;
+  }
+
+  /**
+   * @return {string}
+   */
+  get opacityAnimationType () {
+    return this._opacityAnimationType;
+  }
+
+  /**
+   * @return {boolean}
+   */
+  get isShowing () {
+    return this._opacityAnimationType === OpacityAnimationType.showing;
+  }
+
+  /**
+   * @return {boolean}
+   */
+  get isHiding () {
+    return this._opacityAnimationType === OpacityAnimationType.hiding;
   }
 
   /**
@@ -494,5 +554,50 @@ export class Series extends EventEmitter {
     }
 
     return result;
+  }
+
+  /**
+   * @private
+   */
+  _createShowingAnimation () {
+    if (this._opacityAnimation
+      && this._opacityAnimationType === OpacityAnimationType.showing) {
+      return;
+    }
+    this._createOpacityAnimation( 1 - this._opacity );
+    this._opacityAnimationType = OpacityAnimationType.showing;
+  }
+
+  /**
+   * @private
+   */
+  _createHidingAnimation () {
+    if (this._opacityAnimation
+      && this._opacityAnimationType === OpacityAnimationType.hiding) {
+      return;
+    }
+    this._createOpacityAnimation( -this._opacity );
+    this._opacityAnimationType = OpacityAnimationType.hiding;
+  }
+
+  /**
+   * @param {number} opacityDelta
+   * @private
+   */
+  _createOpacityAnimation (opacityDelta) {
+    this._opacityAnimation = new Tween(this, '_opacity', opacityDelta, {
+      duration: 300,
+      timingFunction: 'easeInOutQuad'
+    });
+
+    const onFinished = _ => {
+      this._opacityAnimation = null;
+      this._opacityAnimationType = null;
+    };
+
+    this._opacityAnimation.on( TweenEvents.COMPLETE, onFinished );
+    this._opacityAnimation.on( TweenEvents.CANCELLED, onFinished );
+
+    this._opacityAnimation.start();
   }
 }
