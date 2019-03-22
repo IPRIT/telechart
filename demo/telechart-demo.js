@@ -2,9 +2,9 @@ import sourceData from '../samples/chart_data.json';
 import { Telechart } from '../src';
 import {
   addClass, animationTimeout,
-  ChartThemes, ChartThemesColors,
+  ChartThemes, ChartThemesColors, clampNumber,
   createElement,
-  cssText, isBrowserSafari, isTouchEventsSupported,
+  cssText, isBrowserSafari,
   parseQueryString,
   removeClass,
   setAttributes, TimeRanges
@@ -51,7 +51,7 @@ sourceData
     return animationTimeout( 0 * 20 * index, [ chartData, index ] );
   })
   .map(animation => {
-    animation.then(([ chartData, index ]) => createChart( chartData, index ));
+    animation.then(([ chartData, index ]) => createChart( chartData, index )).catch( console.error );
     return animation;
   });
 
@@ -171,12 +171,12 @@ function runAnimation (index) {
   let startDate = chart._chart._xAxis[ 0 ];
   let endDate = chart._chart._xAxis[ chart._chart._xAxis.length - 1 ];
   let curDate = endDate - (endDate - startDate) * .23;
-  const tickDelta = (endDate - startDate) * .01;
+  const tickDelta = (endDate - startDate) * .001;
   let sign = -1;
 
   function animate () {
     curDate += sign * tickDelta;
-    chart._chart.setViewportRange( curDate, Infinity );
+    chart._chart.setViewportRange( curDate, clampNumber(curDate + tickDelta * 60, startDate + tickDelta ) );
 
     if (curDate < startDate + 2 * tickDelta) {
       sign *= -1;

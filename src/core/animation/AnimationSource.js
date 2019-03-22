@@ -73,7 +73,7 @@ export class AnimationSource extends EventEmitter {
     this._updateInvokes++;
 
     if (this._updateInvokes % this._updateEach < 1) {
-      this._callUpdate( (this._timeElapsed - this._lastUpdateAt) * this._timeScale );
+      this._callUpdate( ( this._timeElapsed - this._lastUpdateAt ) * this._timeScale );
       this._lastUpdateAt = this._timeElapsed;
     }
   }

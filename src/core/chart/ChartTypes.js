@@ -1,7 +1,7 @@
 /**
- * @type {{x: string, line: string}}
+ * @type {{navigatorChart: string, chart: string}}
  */
 export const ChartTypes = {
-  x: 'x',
-  line: 'line'
+  chart: 'chart',
+  navigatorChart: 'navigatorChart'
 };

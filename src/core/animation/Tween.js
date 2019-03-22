@@ -130,7 +130,7 @@ export class Tween extends EventEmitter {
     }
 
     deltaTime *= this._timeScale;
-    this._timeElapsed += deltaTime * 1000;
+    this._timeElapsed += deltaTime;
 
     this._updateAnimation( deltaTime );
     this._checkDuration();
@@ -173,8 +173,13 @@ export class Tween extends EventEmitter {
     this._dispose();
   }
 
-  patchAnimation () {
-    // todo
+  /**
+   * @param {Array<number>} deltaValues
+   */
+  patchAnimation (deltaValues = []) {
+    for (let i = 0; i < deltaValues.length; ++i) {
+      this._deltaValues[ i ] += deltaValues[ i ];
+    }
   }
 
   /**
@@ -320,7 +325,7 @@ export class Tween extends EventEmitter {
    * @private
    */
   _getPropertyValue (property) {
-    return this._target[ property || '' ] || 0;
+    return this._target[ property ] || 0;
   }
 
   /**

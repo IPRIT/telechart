@@ -1,27 +1,26 @@
 import { BaseChart } from './BaseChart';
 import { cssText } from '../../utils';
 import { ChartTypes } from './ChartTypes';
-import { ChartEvents } from './ChartEvents';
 
-export class Chart extends BaseChart {
+export class NavigatorChart extends BaseChart {
 
   /**
    * @type {string}
    * @private
    */
-  _type = ChartTypes.chart;
+  _type = ChartTypes.navigatorChart;
 
   /**
    * @type {number}
    * @private
    */
-  _chartHeight = 250;
+  _chartHeight = 45;
 
   /**
    * @type {number}
    * @private
    */
-  _chartMaskPadding = 20;
+  _chartMaskPadding = 1;
 
   /**
    * @type {Element}
@@ -34,14 +33,14 @@ export class Chart extends BaseChart {
    */
   createSeriesGroup () {
     this._seriesGroup = this.renderer.createGroup({
-      class: 'telechart-series-group',
-      transform: `translate(0, 70) scale(1 1)`,
+      class: 'telechart-navigator-series-group',
+      transform: `translate(0, 358) scale(1 1)`,
       mask: `url(#${this.chartMaskId})`
     });
 
     this.renderer.createRect(this.renderer.width, '1px', {
       fill: '#ccc',
-      y: 1,
+      y: 0,
       style: cssText({
         shapeRendering: 'crispEdges'
       })
@@ -54,35 +53,6 @@ export class Chart extends BaseChart {
         shapeRendering: 'crispEdges'
       })
     }, this._seriesGroup);
-  }
-
-  /**
-   * Sets initial viewport range for the chart
-   */
-  setInitialRange () {
-    const globalMinX = this.xAxis[ 0 ];
-    const globalMaxX = this.xAxis[ this.xAxis.length - 1 ];
-    const initialViewport = Math.floor( ( globalMaxX - globalMinX ) * .15 );
-    const viewportPadding = this.computeViewportPadding(
-      globalMaxX - initialViewport,
-      globalMaxX
-    );
-
-    // set initial range
-    this.setViewportRange(
-      globalMaxX - initialViewport - viewportPadding,
-      globalMaxX + viewportPadding
-    );
-  }
-
-  /**
-   * @param {*} options
-   * @return {*}
-   */
-  extendSeriesOptions (options) {
-    return Object.assign({}, options, {
-      strokeWidth: 2
-    });
   }
 
   /**

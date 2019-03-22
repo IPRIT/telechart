@@ -23,7 +23,12 @@ export function createElement (tagName, options = {}, children = [], ns = null) 
     children = [].concat( children );
     children.forEach(node => {
       if (typeof node === 'string') {
-        element.innerHTML += node;
+        // optimistic way
+        if (/[<>]/i.test( node )) {
+          element.innerHTML += node;
+        } else {
+          element.textContent += node;
+        }
       } else {
         element.appendChild( node );
       }
@@ -148,7 +153,8 @@ export function getElementScrollWidth (element) {
 }
 
 const camelCaseAttrWhiteList = [
-  'viewBox'
+  'viewBox',
+  'gradientTransform'
 ];
 
 /**

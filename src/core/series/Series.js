@@ -74,6 +74,12 @@ export class Series extends EventEmitter {
   _color = '#31a8dc';
 
   /**
+   * @type {number}
+   * @private
+   */
+  _strokeWidth = 1;
+
+  /**
    * @type {boolean}
    * @private
    */
@@ -133,8 +139,6 @@ export class Series extends EventEmitter {
     this._parent = parent;
     this._settings = settings;
     this._parseSettings();
-
-    this.initialize();
   }
 
   /**
@@ -176,7 +180,7 @@ export class Series extends EventEmitter {
   }
 
   /**
-   * @param {Chart} chart
+   * @param {Chart | NavigatorChart | BaseChart} chart
    */
   setChart (chart) {
     this._chart = chart;
@@ -285,6 +289,13 @@ export class Series extends EventEmitter {
   }
 
   /**
+   * @return {string}
+   */
+  get label () {
+    return this._label;
+  }
+
+  /**
    * @return {boolean}
    */
   get isVisible () {
@@ -322,6 +333,12 @@ export class Series extends EventEmitter {
     this._color = color;
     this._name = name;
 
+    const {
+      strokeWidth = 1
+    } = options;
+
+    this._strokeWidth = strokeWidth;
+
     this._seriesOptions = options;
   }
 
@@ -348,7 +365,7 @@ export class Series extends EventEmitter {
       d: this._pathText,
       fill: 'none',
       stroke: this._color,
-      strokeWidth: '2',
+      strokeWidth: this._strokeWidth,
       strokeLinejoin: 'round',
       strokeLinecap: 'round'
     }, this._group);

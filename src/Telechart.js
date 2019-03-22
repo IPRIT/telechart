@@ -14,6 +14,8 @@ import {
   setAttributesNS,
   cssText, createElement, ROOT_CLASS_NAME
 } from "./utils";
+import { NavigatorChart } from './core/chart/NavigatorChart';
+import { ChartEvents } from './core/chart/ChartEvents';
 
 export class Telechart {
 
@@ -120,6 +122,8 @@ export class Telechart {
 
     // create components
     this._createChart();
+    this._createNavigatorChart();
+    this._addEventsListeners();
 
     // create animation loop
     this._clock = new Clock();
@@ -138,6 +142,7 @@ export class Telechart {
    */
   firstRender () {
     this._chart.firstRender();
+    this._navigatorChart.firstRender();
   }
 
   /**
@@ -155,6 +160,7 @@ export class Telechart {
    */
   update (deltaTime) {
     this._chart.update( deltaTime );
+    this._navigatorChart.update( deltaTime );
   }
 
   /**
@@ -243,7 +249,7 @@ export class Telechart {
       return;
     }
     const tspan = this._titleElement.querySelector( 'tspan' );
-    tspan.innerHTML = title;
+    tspan.textContent = title;
   }
 
   /**
@@ -254,5 +260,28 @@ export class Telechart {
       this._renderer,
       this._options
     );
+
+    this._chart.initialize();
+  }
+
+  /**
+   * @private
+   */
+  _createNavigatorChart () {
+    this._navigatorChart = new NavigatorChart(
+      this._renderer,
+      this._options
+    );
+
+    this._navigatorChart.initialize();
+  }
+
+  /**
+   * @private
+   */
+  _addEventsListeners () {
+    this._chart.on(ChartEvents.SERIES_VISIBLE_CHANGE, line => {
+      this._navigatorChart.toggleSeriesInvisible( line.label );
+    });
   }
 }

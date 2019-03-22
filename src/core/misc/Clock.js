@@ -7,24 +7,17 @@ export class Clock {
   _lastUpdateMs = 0;
 
   constructor () {
-    this._lastUpdateMs = this.now;
+    this._lastUpdateMs = performance.now();
   }
 
   /**
    * @return {number}
    */
   getDelta () {
-    const now = this.now;
-    const delta = ( now - this._lastUpdateMs ) / 1000;
+    const now = performance.now();
+    const delta = now - this._lastUpdateMs;
     this._lastUpdateMs = now;
 
     return delta;
-  }
-
-  /**
-   * @return {number}
-   */
-  get now () {
-    return (performance || Date).now();
   }
 }

@@ -39,7 +39,7 @@ export class SvgRenderer extends EventEmitter {
    * @type {number}
    * @private
    */
-  _minHeight = 400;
+  _minHeight = 450;
 
   /**
    * @type {number}
@@ -86,9 +86,68 @@ export class SvgRenderer extends EventEmitter {
       useNS: true,
       attrs
     }, children, SvgRenderer.NS);
+
     parent.appendChild( group );
 
     return group;
+  }
+
+  /**
+   * @param {*} attrs
+   * @param {Array<Element>|*} children
+   * @param {Element} parent
+   * @return {SVGClipPathElement}
+   */
+  createClipPath (attrs = {}, children = [], parent = this._svgContainer) {
+    const clipPath = createElement('clipPath', {
+      useNS: true,
+      attrs
+    }, children, SvgRenderer.NS);
+
+    parent.appendChild( clipPath );
+
+    return clipPath;
+  }
+
+  /**
+   * @param {*} attrs
+   * @param {Array<Element>|*} children
+   * @param {Element} parent
+   * @return {SVGMaskElement}
+   */
+  createMask (attrs = {}, children = [], parent = this._svgContainer) {
+    const mask = createElement('mask', {
+      useNS: true,
+      attrs
+    }, children, SvgRenderer.NS);
+
+    parent.appendChild( mask );
+
+    return mask;
+  }
+
+  /**
+   * @param {*} attrs
+   * @param {Array<*>} stops
+   * @param {Element} parent
+   * @return {SVGLinearGradientElement}
+   */
+  createLinearGradient (attrs = {}, stops = [], parent = this._svgContainer) {
+    const stopElements = stops.map(stopAttrs => {
+      return createElement('stop', {
+        useNS: true,
+        attrs: stopAttrs
+      }, [], SvgRenderer.NS);
+    });
+
+    const gradient = createElement('linearGradient', {
+      useNS: true,
+      attrs
+    }, stopElements, SvgRenderer.NS);
+
+    parent.appendChild( gradient );
+
+    return gradient;
   }
 
   /**
@@ -127,16 +186,14 @@ export class SvgRenderer extends EventEmitter {
   }
 
   /**
-   * @param {Element[]} defs
    * @param {Element} parent
    * @return {SVGDefsElement}
    */
-  createDefs (defs = [], parent = this._svgContainer) {
-    defs = [].concat( defs );
-
+  createDefs (parent = this._svgContainer) {
     const element = createElement('defs', {
       useNS: true
-    }, defs, SvgRenderer.NS);
+    }, [], SvgRenderer.NS);
+
     parent.appendChild( element );
 
     return element;
