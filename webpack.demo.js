@@ -11,7 +11,7 @@ const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const buildPath = path.resolve(__dirname, 'docs');
 
 module.exports = {
-  devtool: 'source-map',
+  // devtool: 'source-map',
   entry: {
     demo: './demo/index.js'
   },

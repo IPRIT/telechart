@@ -699,8 +699,17 @@ export class NavigatorChart extends BaseChart {
 
     const mouseMoveListener = this._onSliderControllerMouseMove.bind( this );
 
+    const lastBodyStyle = document.body.getAttribute( 'style' );
+    setAttributeNS( document.body, 'style', cssText({ cursor: 'e-resize' }), null );
+
     document.addEventListener('mousemove', mouseMoveListener);
     document.addEventListener('mouseup', ev => {
+      if (lastBodyStyle) {
+        setAttributeNS( document.body, 'style', lastBodyStyle, null );
+      } else {
+        document.body.removeAttribute( 'style' );
+      }
+
       document.removeEventListener( 'mousemove', mouseMoveListener )
     });
   }
