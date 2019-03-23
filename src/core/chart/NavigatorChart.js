@@ -1,6 +1,13 @@
 import { BaseChart } from './BaseChart';
 import { ChartTypes } from './ChartTypes';
-import { clampNumber, cssText, getElementOffset, setAttributeNS, setAttributesNS } from '../../utils';
+import {
+  clampNumber,
+  cssText,
+  getElementOffset,
+  isPassiveEventSupported, passiveIfSupported,
+  setAttributeNS,
+  setAttributesNS
+} from '../../utils';
 import { NavigatorChartEvents } from './events/NavigatorChartEvents';
 import { Tween, TweenEvents } from '../animation/Tween';
 
@@ -143,7 +150,7 @@ export class NavigatorChart extends BaseChart {
    * @type {Array<number>}
    * @private
    */
-  _navigatorRange = [ .85, 1 ];
+  _navigatorRange = [ .7, 1 ];
 
   /**
    * @type {Tween}
@@ -474,9 +481,12 @@ export class NavigatorChart extends BaseChart {
    */
   _createSliderEventsListeners () {
     this._sliderTouchStartListener = this._onSliderTouchStart.bind( this );
+    this._sliderTouchMoveListener = this._onSliderTouchMove.bind( this );
     this._sliderMouseDownListener = this._onSliderMouseDown.bind( this );
 
-    this._slider.addEventListener( 'touchstart', this._sliderTouchStartListener );
+    this._slider.addEventListener( 'touchstart', this._sliderTouchStartListener, passiveIfSupported );
+    this._slider.addEventListener( 'touchmove', this._sliderTouchMoveListener, passiveIfSupported );
+
     this._slider.addEventListener( 'mousedown', this._sliderMouseDownListener );
   }
 
@@ -485,30 +495,27 @@ export class NavigatorChart extends BaseChart {
    * @private
    */
   _onSliderTouchStart (ev) {
-    const sliderStartPosition = this._navigatorRange.slice();
-    const sliderTouchMoveListener = this._onSliderTouchMove.bind( this, ev, sliderStartPosition );
+    const {
+      pageX, pageY
+    } = ev.targetTouches[ 0 ];
 
-    this._slider.addEventListener('touchmove', sliderTouchMoveListener);
-    this._slider.addEventListener('touchend', ev => {
-      this._slider.removeEventListener( 'touchmove', sliderTouchMoveListener )
-    });
+    this._sliderTouchStartEvent = {
+      pageX, pageY
+    };
+
+    this._sliderTouchStartPosition = this._navigatorRange.slice();
   }
 
   /**
-   * @param {TouchEvent} startEvent
-   * @param {Array<number>} startPosition
    * @param {TouchEvent} ev
    * @private
    */
-  _onSliderTouchMove (startEvent, startPosition, ev) {
-    ev.preventDefault();
-
-    const startTouch = startEvent.targetTouches[ 0 ];
+  _onSliderTouchMove (ev) {
     const targetTouch = ev.targetTouches[ 0 ];
 
     const {
       pageX: startPageX
-    } = startTouch;
+    } = this._sliderTouchStartEvent;
 
     const {
       pageX = 0
@@ -517,8 +524,8 @@ export class NavigatorChart extends BaseChart {
     const positionDelta = ( startPageX - pageX ) / this.navigatorWidth;
 
     let [ min, max ] = this._clampNavigationRange(
-      startPosition[ 0 ] - positionDelta,
-      startPosition[ 1 ] - positionDelta,
+      this._sliderTouchStartPosition[ 0 ] - positionDelta,
+      this._sliderTouchStartPosition[ 1 ] - positionDelta,
       true
     );
 
