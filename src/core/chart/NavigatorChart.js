@@ -29,7 +29,7 @@ export class NavigatorChart extends BaseChart {
    * @type {number}
    * @private
    */
-  _offsetY = 403;
+  _offsetY = 393;
 
   /**
    * @type {number}
@@ -44,6 +44,7 @@ export class NavigatorChart extends BaseChart {
   _paddingLeftRight = 11;
 
   /**
+   * @extends
    * @type {number}
    * @private
    * @readonly

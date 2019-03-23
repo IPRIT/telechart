@@ -14,7 +14,7 @@ export class Chart extends BaseChart {
    * @type {number}
    * @private
    */
-  _chartHeight = 300;
+  _chartHeight = 290;
 
   /**
    * @type {number}
