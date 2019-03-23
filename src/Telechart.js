@@ -4,6 +4,8 @@ import { AnimationSource, AnimationSourceEvents } from './core/animation/Animati
 import { SvgRenderer } from "./core/SvgRenderer";
 import { Chart } from './core/chart/Chart';
 import { Clock } from './core/misc/Clock';
+import { NavigatorChart } from './core/chart/NavigatorChart';
+import { ChartEvents } from './core/chart/events/ChartEvents';
 
 import {
   addClass,
@@ -14,8 +16,7 @@ import {
   setAttributesNS,
   cssText, createElement, ROOT_CLASS_NAME
 } from "./utils";
-import { NavigatorChart } from './core/chart/NavigatorChart';
-import { ChartEvents } from './core/chart/ChartEvents';
+import { NavigatorChartEvents } from './core/chart/events/NavigatorChartEvents';
 
 export class Telechart {
 
@@ -42,6 +43,12 @@ export class Telechart {
    * @private
    */
   _chart = null;
+
+  /**
+   * @type {NavigatorChart}
+   * @private
+   */
+  _navigatorChart = null;
 
   /**
    * @type {string}
@@ -282,6 +289,14 @@ export class Telechart {
   _addEventsListeners () {
     this._chart.on(ChartEvents.SERIES_VISIBLE_CHANGE, line => {
       this._navigatorChart.toggleSeriesInvisible( line.label );
+    });
+
+    this._navigatorChart.on(NavigatorChartEvents.RANGE_CHANGED, range => {
+      this._chart.setNavigationRange( ...range );
+    });
+
+    this._navigatorChart.on(NavigatorChartEvents.ANIMATE_RANGE, range => {
+      this._chart.animateNavigationRangeTo( ...range );
     });
   }
 }

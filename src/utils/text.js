@@ -14,7 +14,7 @@ export function capitalize (text) {
  * @param {Object} styleObject
  * @returns {string}
  */
-export function cssText (styleObject) {
+export function cssText (styleObject = {}) {
   return Object.keys( styleObject ).reduce((css, prop) => {
     return `${css ? css + ' ' : ''}${camelToKebabCase( prop )}: ${styleObject[ prop ]};`;
   }, '');

@@ -4,7 +4,7 @@ import { Series } from '../series/Series';
 import { arraysEqual, binarySearchIndexes, clampNumber, ensureNumber, isDate, setAttributeNS } from '../../utils';
 import { Tween, TweenEvents } from '../animation/Tween';
 import { ChartTypes } from './ChartTypes';
-import { ChartEvents } from './ChartEvents';
+import { ChartEvents } from './events/ChartEvents';
 
 let CHART_ID = 1;
 
@@ -135,6 +135,12 @@ export class BaseChart extends EventEmitter {
    * @type {number}
    * @private
    */
+  _viewportPadding = 13;
+
+  /**
+   * @type {number}
+   * @private
+   */
   _viewportLeftPaddingScale = 0;
 
   /**
@@ -186,6 +192,24 @@ export class BaseChart extends EventEmitter {
   _minMaxYAnimation = null;
 
   /**
+   * @type {number}
+   * @private
+   */
+  _minMaxYAnimationSign = null;
+
+  /**
+   * @type {Tween}
+   * @private
+   */
+  _rangeAnimation = null;
+
+  /**
+   * @type {*}
+   * @private
+   */
+  _rangeAnimationObject = {};
+
+  /**
    * @param {SvgRenderer} renderer
    * @param {Object} options
    */
@@ -221,8 +245,19 @@ export class BaseChart extends EventEmitter {
       extremesUpdated = true;
     }
 
-    if (this._viewportRangeUpdateNeeded) {
-      this.updateViewportRange();
+    const hasRangeAnimation = this._rangeAnimation && this._rangeAnimation.isRunning;
+
+    if (this._viewportRangeUpdateNeeded || hasRangeAnimation) {
+      if (hasRangeAnimation) {
+        this._rangeAnimation.update( deltaTime );
+
+        this.updateViewportRange([
+          this._rangeAnimationObject.from,
+          this._rangeAnimationObject.to
+        ], { skipExtremes: false });
+      } else {
+        this.updateViewportRange();
+      }
 
       this._viewportRangeUpdateNeeded = false;
     }
@@ -238,7 +273,7 @@ export class BaseChart extends EventEmitter {
     }
 
     this.eachSeries(line => {
-      const hasOpacityAnimation = !!line.opacityAnimationType;
+      const hasOpacityAnimation = line.isHiding;
       const isNavigatorPath = this._type === ChartTypes.navigatorChart;
 
       if (extremesUpdated && !(isNavigatorPath && hasOpacityAnimation)) {
@@ -373,6 +408,45 @@ export class BaseChart extends EventEmitter {
   }
 
   /**
+   * @param {number} minX
+   * @param {number} maxX
+   * @param {*} options
+   */
+  animateViewportRangeTo (minX = -Infinity, maxX = Infinity, options = {}) {
+    const {
+      duration = 300,
+      timingFunction = 'easeInOutQuad',
+      preservePadding = false
+    } = options;
+
+    const [ newMinX, newMaxX ] = this._clampViewportRange( minX, maxX, preservePadding );
+
+    if (this._rangeAnimation) {
+      return this._rangeAnimation.patchAnimation( [ newMinX, newMaxX ] );
+    }
+
+    this._rangeAnimationObject = {
+      from: this._viewportRange[ 0 ],
+      to: this._viewportRange[ 1 ]
+    };
+
+    this._rangeAnimation = new Tween(this._rangeAnimationObject, [ 'from', 'to' ], [
+      newMinX, newMaxX
+    ], {
+      duration, timingFunction
+    });
+
+    const onFinished = _ => {
+      this._rangeAnimation = null;
+    };
+
+    this._rangeAnimation.on( TweenEvents.COMPLETE, onFinished );
+    this._rangeAnimation.on( TweenEvents.CANCELLED, onFinished );
+
+    this._rangeAnimation.start();
+  }
+
+  /**
    * @param {number|Date} minX
    * @param {number|Date} maxX
    * @param {boolean} skipExtremes
@@ -380,7 +454,7 @@ export class BaseChart extends EventEmitter {
    */
   setViewportRange (minX = -Infinity, maxX = Infinity, { skipExtremes = false, preservePadding = false } = {}) {
     // recompute X boundaries
-    this._clampViewportRange( minX, maxX, preservePadding );
+    this._setViewportRange( minX, maxX, preservePadding );
 
     // remember last indexes
     const oldRangeIndexes = this._viewportRangeIndexes;
@@ -424,14 +498,22 @@ export class BaseChart extends EventEmitter {
 
   /**
    * Recompute key variables for viewport range
+   *
+   * @param {Array<number>} viewportRange
+   * @param {*} options
    */
-  updateViewportRange () {
+  updateViewportRange (viewportRange = this._viewportRange, options = {}) {
+    const {
+      skipExtremes = true,
+      preservePadding = true
+    } = options;
+
     // recompute X boundaries
     this.setViewportRange(
-      this._viewportRange[ 0 ],
-      this._viewportRange[ 1 ], {
-        skipExtremes: true,
-        preservePadding: true
+      viewportRange[ 0 ],
+      viewportRange[ 1 ], {
+        skipExtremes,
+        preservePadding
       }
     );
   }
@@ -541,11 +623,7 @@ export class BaseChart extends EventEmitter {
     }
 
     if (updateAnimation) {
-      if (this._minMaxYAnimation) {
-        this._patchMinMaxYAnimation();
-      } else {
-        this._createMinMaxYAnimation();
-      }
+      this._updateOrCreateMinMaxYAnimation();
     }
   }
 
@@ -572,7 +650,7 @@ export class BaseChart extends EventEmitter {
    * @return {number}
    */
   computeViewportPadding (localMinX, localMaxX) {
-    return this.computeViewportPixelX( localMinX, localMaxX ) * 12;
+    return this.computeViewportPixelX( localMinX, localMaxX ) * this._viewportPadding;
   }
 
   /**
@@ -807,6 +885,13 @@ export class BaseChart extends EventEmitter {
   }
 
   /**
+   * @return {number}
+   */
+  get navigatorDistanceScale () {
+    return this._navigatorDistanceScale;
+  }
+
+  /**
    * @private
    */
   _updateViewportIndexes () {
@@ -815,6 +900,19 @@ export class BaseChart extends EventEmitter {
     const [ maxLowerIndex, maxUpperIndex ] = binarySearchIndexes( this._xAxis, rangeEnd );
 
     this._viewportRangeIndexes = [ minUpperIndex, maxLowerIndex ];
+  }
+
+  /**
+   * @param {number} minX
+   * @param {number} maxX
+   * @param {boolean} preservePadding
+   * @private
+   */
+  _setViewportRange (minX, maxX, preservePadding = false) {
+    const [ newMinX, newMaxX ] = this._clampViewportRange( minX, maxX, preservePadding );
+
+    this._viewportRange = [ newMinX, newMaxX ];
+    this._viewportDistance = newMaxX - newMinX;
   }
 
   /**
@@ -836,8 +934,12 @@ export class BaseChart extends EventEmitter {
       maxX = maxX.getTime();
     }
 
-    let newMinX = Math.max( minX, globalMinX );
-    let newMaxX = Math.min( maxX, globalMaxX );
+    if (minX > maxX) {
+      [ minX, maxX ] = [ maxX, minX ];
+    }
+
+    let newMinX = clampNumber( minX, globalMinX, globalMaxX );
+    let newMaxX = clampNumber( maxX, globalMinX, globalMaxX );
 
     const actualPaddingX = this.computeViewportPadding( newMinX, newMaxX );
 
@@ -858,8 +960,26 @@ export class BaseChart extends EventEmitter {
       newMaxX += actualPaddingX * this._viewportRightPaddingScale;
     }
 
-    this._viewportRange = [ newMinX, newMaxX ];
-    this._viewportDistance = newMaxX - newMinX;
+    return [ newMinX, newMaxX ];
+  }
+
+  /**
+   * @private
+   */
+  _updateOrCreateMinMaxYAnimation () {
+    if (!this._minMaxYAnimation) {
+      return this._createMinMaxYAnimation();
+    }
+
+    const currentLocalExtremeDifference = this.currentLocalExtremeDifference;
+    const newLocalExtremeDifference = this.localExtremeDifference;
+    const animationSign = currentLocalExtremeDifference < newLocalExtremeDifference;
+
+    if (animationSign !== this._minMaxYAnimationSign) {
+      return this._createMinMaxYAnimation();
+    }
+
+    this._patchMinMaxYAnimation();
   }
 
   /**
@@ -870,12 +990,14 @@ export class BaseChart extends EventEmitter {
       this._minMaxYAnimation.cancel();
     }
 
+    this._updateMinMaxAnimationSign();
+
     this._minMaxYAnimation = new Tween(this, [
       '_currentLocalMinY',
       '_currentLocalMaxY'
     ], [
-      this._localMinY - this._currentLocalMinY,
-      this._localMaxY - this._currentLocalMaxY
+      this._localMinY,
+      this._localMaxY
     ], {
       duration: 300,
       timingFunction: 'easeInOutQuad'
@@ -895,14 +1017,17 @@ export class BaseChart extends EventEmitter {
    * @private
    */
   _patchMinMaxYAnimation () {
-    // console.log(this._minMaxYAnimation.id, 'local deltas (min, max):', this._minMaxYAnimation._deltaValues);
+    this._minMaxYAnimation.patchAnimation([
+      this._localMinY,
+      this._localMaxY
+    ]);
+  }
 
-    this._createMinMaxYAnimation();
-
-    /*this._minMaxYAnimation.patchAnimation([
-      this._localMinY - this._currentLocalMinY,
-      this._localMaxY - this._currentLocalMaxY
-    ]);*/
+  /**
+   * @private
+   */
+  _updateMinMaxAnimationSign () {
+    this._minMaxYAnimationSign = this.currentLocalExtremeDifference < this.localExtremeDifference;
   }
 
   /**

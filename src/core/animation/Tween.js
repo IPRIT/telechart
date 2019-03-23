@@ -81,7 +81,7 @@ export class Tween extends EventEmitter {
   _target = null;
 
   /**
-   * @type {Array<string>}
+   * @type {Array<string | number>}
    * @private
    */
   _properties = [];
@@ -90,7 +90,7 @@ export class Tween extends EventEmitter {
    * @type {Array}
    * @private
    */
-  _deltaValues = [];
+  _targetValues = [];
 
   /**
    * @type {Array<number>}
@@ -108,16 +108,16 @@ export class Tween extends EventEmitter {
 
   /**
    * @param {*} target
-   * @param {string|Array<string>} properties
-   * @param {number|Array<number>} deltaValues
+   * @param {string|Array<string | number>} properties
+   * @param {number|Array<number>} targetValues
    * @param {*} params
    */
-  constructor (target, properties = [], deltaValues = [], params = {}) {
+  constructor (target, properties = [], targetValues = [], params = {}) {
     super();
 
     this._target = target;
     this._properties = [].concat( properties );
-    this._deltaValues = [].concat( deltaValues );
+    this._targetValues = [].concat( targetValues );
     this._initParams( params );
   }
 
@@ -174,12 +174,12 @@ export class Tween extends EventEmitter {
   }
 
   /**
-   * @param {Array<number>} deltaValues
+   * @param {Array<number>} targetValues
    */
-  patchAnimation (deltaValues = []) {
-    for (let i = 0; i < deltaValues.length; ++i) {
-      this._deltaValues[ i ] += deltaValues[ i ];
-    }
+  patchAnimation (targetValues = []) {
+    this._targetValues = targetValues;
+    this._startValues = this._getPropertyValues( this._properties );
+    this._timeElapsed = 0;
   }
 
   /**
@@ -293,7 +293,8 @@ export class Tween extends EventEmitter {
 
     for (let i = 0, length = this._properties.length; i < length; ++i) {
       const property = this._properties[ i ];
-      this._target[ property ] = this._startValues[ i ] + this._deltaValues[ i ] * timingProgress;
+      const delta = ( this._targetValues[ i ] - this._startValues[ i ] ) * timingProgress;
+      this._target[ property ] = this._startValues[ i ] + delta;
     }
   }
 
@@ -346,7 +347,7 @@ export class Tween extends EventEmitter {
   _dispose () {
     this._params = null;
     this._timingFunction = null;
-    this._deltaValues = null;
+    this._targetValues = null;
     this._startValues = null;
     this._properties = null;
     this._target = null;

@@ -25,10 +25,7 @@ export function clampNumber (value, min = -Infinity, max = Infinity) {
   if (min > max) {
     [ min, max ] = [ max, min ];
   }
-  return Math.min(
-    Math.max(ensureNumber(value), min),
-    max
-  );
+  return Math.min( Math.max( value, min ), max );
 }
 
 /**

@@ -1,7 +1,6 @@
 import { BaseChart } from './BaseChart';
 import { cssText } from '../../utils';
 import { ChartTypes } from './ChartTypes';
-import { ChartEvents } from './ChartEvents';
 
 export class Chart extends BaseChart {
 
@@ -57,6 +56,26 @@ export class Chart extends BaseChart {
   }
 
   /**
+   * @param {number} min
+   * @param {number} max
+   */
+  setNavigationRange (min, max) {
+    const [ minX, maxX ] = this._resolveNavigationRange( min, max );
+
+    this.setViewportRange( minX, maxX );
+  }
+
+  /**
+   * @param {number} min
+   * @param {number} max
+   */
+  animateNavigationRangeTo (min, max) {
+    const [ minX, maxX ] = this._resolveNavigationRange( min, max );
+
+    this.animateViewportRangeTo( minX, maxX );
+  }
+
+  /**
    * Sets initial viewport range for the chart
    */
   setInitialRange () {
@@ -90,5 +109,24 @@ export class Chart extends BaseChart {
    */
   get chartHeight () {
     return this._chartHeight;
+  }
+
+  /**
+   * @param {number} min
+   * @param {number} max
+   * @private
+   */
+  _resolveNavigationRange (min, max) {
+    const globalMinX = this.xAxis[ 0 ];
+    const globalMaxX = this.xAxis[ this.xAxis.length - 1 ];
+
+    const globalDistance = globalMaxX - globalMinX;
+
+    let minX = globalMinX + min * globalDistance;
+    let maxX = globalMinX + max * globalDistance;
+
+    const padding = this.computeViewportPadding( minX, maxX );
+
+    return [ minX - padding, maxX + padding ];
   }
 }

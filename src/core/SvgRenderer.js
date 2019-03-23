@@ -45,7 +45,7 @@ export class SvgRenderer extends EventEmitter {
    * @type {number}
    * @private
    */
-  _minWidth = 10;
+  _minWidth = 100;
 
   /**
    * @type {number}

@@ -170,13 +170,13 @@ function runAnimation (index) {
   const chart = charts[ index ];
   let startDate = chart._chart._xAxis[ 0 ];
   let endDate = chart._chart._xAxis[ chart._chart._xAxis.length - 1 ];
-  let curDate = endDate - (endDate - startDate) * .23;
-  const tickDelta = (endDate - startDate) * .001;
+  let curDate = endDate - (endDate - startDate) * .03;
+  const tickDelta = (endDate - startDate) * .005;
   let sign = -1;
 
   function animate () {
     curDate += sign * tickDelta;
-    chart._chart.setViewportRange( curDate, clampNumber(curDate + tickDelta * 60, startDate + tickDelta ) );
+    chart._chart.setViewportRange( curDate, clampNumber(curDate + tickDelta * 30, startDate + tickDelta ) );
 
     if (curDate < startDate + 2 * tickDelta) {
       sign *= -1;

@@ -6,7 +6,7 @@ import { Tween, TweenEvents } from '../animation/Tween';
 
 let SERIES_AUTOINCREMENT = 1;
 
-const OpacityAnimationType = {
+export const OpacityAnimationType = {
   hiding: 1,
   showing: 2
 };
@@ -564,7 +564,7 @@ export class Series extends EventEmitter {
       && this._opacityAnimationType === OpacityAnimationType.showing) {
       return;
     }
-    this._createOpacityAnimation( 1 - this._opacity );
+    this._createOpacityAnimation( 1 );
     this._opacityAnimationType = OpacityAnimationType.showing;
   }
 
@@ -576,16 +576,16 @@ export class Series extends EventEmitter {
       && this._opacityAnimationType === OpacityAnimationType.hiding) {
       return;
     }
-    this._createOpacityAnimation( -this._opacity );
+    this._createOpacityAnimation( 0 );
     this._opacityAnimationType = OpacityAnimationType.hiding;
   }
 
   /**
-   * @param {number} opacityDelta
+   * @param {number} opacity
    * @private
    */
-  _createOpacityAnimation (opacityDelta) {
-    this._opacityAnimation = new Tween(this, '_opacity', opacityDelta, {
+  _createOpacityAnimation (opacity) {
+    this._opacityAnimation = new Tween(this, '_opacity', opacity, {
       duration: 300,
       timingFunction: 'easeInOutQuad'
     });
@@ -593,6 +593,7 @@ export class Series extends EventEmitter {
     const onFinished = _ => {
       this._opacityAnimation = null;
       this._opacityAnimationType = null;
+      this.requestPathUpdate();
     };
 
     this._opacityAnimation.on( TweenEvents.COMPLETE, onFinished );

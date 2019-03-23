@@ -8,12 +8,12 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 
-const buildPath = path.resolve(__dirname, 'dist');
+const buildPath = path.resolve(__dirname, 'docs');
 
 module.exports = {
   devtool: 'source-map',
   entry: {
-    telechart: './src/index.js'
+    demo: './demo/index.js'
   },
   output: {
     filename: '[name].[hash:20].js',
