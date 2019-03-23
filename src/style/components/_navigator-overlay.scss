@@ -4,6 +4,7 @@
 @include block('navigator-overlay', 'component') {
   fill: rgba(240, 246, 249, 0.75);
   transition: fill $primary-transition;
+  cursor: pointer;
 
   @include default-theme {
     fill: rgba(240, 246, 249, 0.75) !important;

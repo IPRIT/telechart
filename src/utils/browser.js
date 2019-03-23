@@ -30,3 +30,4 @@ try {
 
 export const isPassiveEventSupported = passiveSupported;
 export const passiveIfSupported = passiveSupported ? { passive: true } : false;
+export const passiveIfSupportedFn = (passive = true) => passiveSupported ? { passive } : false;

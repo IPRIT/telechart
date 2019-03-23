@@ -3,8 +3,8 @@ import { ChartTypes } from './ChartTypes';
 import {
   clampNumber,
   cssText,
-  getElementOffset,
-  isPassiveEventSupported, passiveIfSupported,
+  getElementOffset, isTouchEventsSupported,
+  passiveIfSupported,
   setAttributeNS,
   setAttributesNS
 } from '../../utils';
@@ -90,13 +90,13 @@ export class NavigatorChart extends BaseChart {
    * @type {number}
    * @private
    */
-  _sliderControllerWidth = 30;
+  _sliderControllerWidth = isTouchEventsSupported() ? 30 : 20;
 
   /**
    * @type {number}
    * @private
    */
-  _sliderControllerOffset = 20;
+  _sliderControllerOffset = isTouchEventsSupported() ? 17 : 12;
 
   /**
    * @type {number}
@@ -481,35 +481,42 @@ export class NavigatorChart extends BaseChart {
    */
   _createSliderEventsListeners () {
     // slider
-    this._sliderTouchStartListener = this._onSliderTouchStart.bind( this );
-    this._sliderTouchMoveListener = this._onSliderTouchMove.bind( this );
-    this._sliderMouseDownListener = this._onSliderMouseDown.bind( this );
+    const touchStartListener = this._onSliderTouchStart.bind( this );
+    const touchMoveListener = this._onSliderTouchMove.bind( this );
+    const mouseDownListener = this._onSliderMouseDown.bind( this );
 
-    this._slider.addEventListener( 'touchstart', this._sliderTouchStartListener, passiveIfSupported );
-    this._slider.addEventListener( 'touchmove', this._sliderTouchMoveListener, passiveIfSupported );
+    this._slider.addEventListener( 'touchstart', touchStartListener, passiveIfSupported );
+    this._slider.addEventListener( 'touchmove', touchMoveListener, passiveIfSupported );
 
-    this._slider.addEventListener( 'mousedown', this._sliderMouseDownListener );
+    this._slider.addEventListener( 'mousedown', mouseDownListener );
 
     // slider controllers
     // left
-    this._sliderControllerLeftTouchStartListener = this._onSliderControllerTouchStart.bind( this, 'left' );
-    this._sliderControllerLeftTouchMoveListener = this._onSliderControllerTouchMove.bind( this );
-    this._sliderControllerLeftMouseDownListener = this._onSliderControllerMouseDown.bind( this, 'left' );
+    const controllerLeftTouchStartListener = this._onSliderControllerTouchStart.bind( this, 'left' );
+    const controllerLeftTouchMoveListener = this._onSliderControllerTouchMove.bind( this );
+    const controllerLeftMouseDownListener = this._onSliderControllerMouseDown.bind( this, 'left' );
 
     //right
-    this._sliderControllerRightTouchStartListener = this._onSliderControllerTouchStart.bind( this, 'right' );
-    this._sliderControllerRightTouchMoveListener = this._onSliderControllerTouchMove.bind( this );
-    this._sliderControllerRightMouseDownListener = this._onSliderControllerMouseDown.bind( this, 'right' );
+    const controllerRightTouchStartListener = this._onSliderControllerTouchStart.bind( this, 'right' );
+    const controllerRightTouchMoveListener = this._onSliderControllerTouchMove.bind( this );
+    const controllerRightMouseDownListener = this._onSliderControllerMouseDown.bind( this, 'right' );
 
     // left
-    this._sliderControllerLeft.addEventListener( 'touchstart', this._sliderControllerLeftTouchStartListener, passiveIfSupported );
-    this._sliderControllerLeft.addEventListener( 'touchmove', this._sliderControllerLeftTouchMoveListener, passiveIfSupported );
-    this._sliderControllerLeft.addEventListener( 'mousedown', this._sliderControllerLeftMouseDownListener );
+    this._sliderControllerLeft.addEventListener( 'touchstart', controllerLeftTouchStartListener, passiveIfSupported );
+    this._sliderControllerLeft.addEventListener( 'touchmove', controllerLeftTouchMoveListener, passiveIfSupported );
+    this._sliderControllerLeft.addEventListener( 'mousedown', controllerLeftMouseDownListener );
 
     // right
-    this._sliderControllerRight.addEventListener( 'touchstart', this._sliderControllerRightTouchStartListener, passiveIfSupported );
-    this._sliderControllerRight.addEventListener( 'touchmove', this._sliderControllerRightTouchMoveListener, passiveIfSupported );
-    this._sliderControllerRight.addEventListener( 'mousedown', this._sliderControllerRightMouseDownListener );
+    this._sliderControllerRight.addEventListener( 'touchstart', controllerRightTouchStartListener, passiveIfSupported );
+    this._sliderControllerRight.addEventListener( 'touchmove', controllerRightTouchMoveListener, passiveIfSupported );
+    this._sliderControllerRight.addEventListener( 'mousedown', controllerRightMouseDownListener );
+
+    // overlays
+    const overlayLeftClickListener = this._onSliderOverlayClick.bind( this, 'left' );
+    const overlayRightClickListener = this._onSliderOverlayClick.bind( this, 'right' );
+
+    this._overlayLeft.addEventListener( 'click', overlayLeftClickListener );
+    this._overlayRight.addEventListener( 'click', overlayRightClickListener );
   }
 
   /**
@@ -640,6 +647,10 @@ export class NavigatorChart extends BaseChart {
    * @private
    */
   _onSliderControllerTouchMove (ev) {
+    if (ev.cancelable) {
+      ev.preventDefault();
+    }
+
     const targetTouch = ev.targetTouches[ 0 ];
 
     const {
@@ -686,7 +697,7 @@ export class NavigatorChart extends BaseChart {
       pageX, pageY
     };
 
-    const mouseMoveListener = this._onSliderControllerLeftMouseMove.bind( this );
+    const mouseMoveListener = this._onSliderControllerMouseMove.bind( this );
 
     document.addEventListener('mousemove', mouseMoveListener);
     document.addEventListener('mouseup', ev => {
@@ -698,7 +709,7 @@ export class NavigatorChart extends BaseChart {
    * @param {MouseEvent} ev
    * @private
    */
-  _onSliderControllerLeftMouseMove (ev) {
+  _onSliderControllerMouseMove (ev) {
     ev.preventDefault();
 
     const {
@@ -727,6 +738,24 @@ export class NavigatorChart extends BaseChart {
     }
 
     this.setNavigationRange( min, max );
+  }
+
+  /**
+   * @param {string} direction
+   * @param {MouseEvent} ev
+   * @private
+   */
+  _onSliderOverlayClick (direction, ev) {
+    const position = this._resolveNavigatorPosition( ev );
+    const halfDistance = ( this._navigatorRange[ 1 ] - this._navigatorRange[ 0 ] ) * .5;
+
+    const [ min, max ] = this._clampNavigationRange(
+      position - halfDistance,
+      position + halfDistance,
+      true
+    );
+
+    this.animateNavigationRangeTo( min, max );
   }
 
   /**
