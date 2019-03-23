@@ -480,6 +480,7 @@ export class NavigatorChart extends BaseChart {
    * @private
    */
   _createSliderEventsListeners () {
+    // slider
     this._sliderTouchStartListener = this._onSliderTouchStart.bind( this );
     this._sliderTouchMoveListener = this._onSliderTouchMove.bind( this );
     this._sliderMouseDownListener = this._onSliderMouseDown.bind( this );
@@ -488,6 +489,27 @@ export class NavigatorChart extends BaseChart {
     this._slider.addEventListener( 'touchmove', this._sliderTouchMoveListener, passiveIfSupported );
 
     this._slider.addEventListener( 'mousedown', this._sliderMouseDownListener );
+
+    // slider controllers
+    // left
+    this._sliderControllerLeftTouchStartListener = this._onSliderControllerTouchStart.bind( this, 'left' );
+    this._sliderControllerLeftTouchMoveListener = this._onSliderControllerTouchMove.bind( this );
+    this._sliderControllerLeftMouseDownListener = this._onSliderControllerMouseDown.bind( this, 'left' );
+
+    //right
+    this._sliderControllerRightTouchStartListener = this._onSliderControllerTouchStart.bind( this, 'right' );
+    this._sliderControllerRightTouchMoveListener = this._onSliderControllerTouchMove.bind( this );
+    this._sliderControllerRightMouseDownListener = this._onSliderControllerMouseDown.bind( this, 'right' );
+
+    // left
+    this._sliderControllerLeft.addEventListener( 'touchstart', this._sliderControllerLeftTouchStartListener, passiveIfSupported );
+    this._sliderControllerLeft.addEventListener( 'touchmove', this._sliderControllerLeftTouchMoveListener, passiveIfSupported );
+    this._sliderControllerLeft.addEventListener( 'mousedown', this._sliderControllerLeftMouseDownListener );
+
+    // right
+    this._sliderControllerRight.addEventListener( 'touchstart', this._sliderControllerRightTouchStartListener, passiveIfSupported );
+    this._sliderControllerRight.addEventListener( 'touchmove', this._sliderControllerRightTouchMoveListener, passiveIfSupported );
+    this._sliderControllerRight.addEventListener( 'mousedown', this._sliderControllerRightMouseDownListener );
   }
 
   /**
@@ -499,11 +521,11 @@ export class NavigatorChart extends BaseChart {
       pageX, pageY
     } = ev.targetTouches[ 0 ];
 
-    this._sliderTouchStartEvent = {
+    this._sliderStartEvent = {
       pageX, pageY
     };
 
-    this._sliderTouchStartPosition = this._navigatorRange.slice();
+    this._sliderStartPosition = this._navigatorRange.slice();
   }
 
   /**
@@ -515,7 +537,7 @@ export class NavigatorChart extends BaseChart {
 
     const {
       pageX: startPageX
-    } = this._sliderTouchStartEvent;
+    } = this._sliderStartEvent;
 
     const {
       pageX = 0
@@ -523,9 +545,11 @@ export class NavigatorChart extends BaseChart {
 
     const positionDelta = ( startPageX - pageX ) / this.navigatorWidth;
 
+    const startPosition = this._sliderStartPosition;
+
     let [ min, max ] = this._clampNavigationRange(
-      this._sliderTouchStartPosition[ 0 ] - positionDelta,
-      this._sliderTouchStartPosition[ 1 ] - positionDelta,
+      startPosition[ 0 ] - positionDelta,
+      startPosition[ 1 ] - positionDelta,
       true
     );
 
@@ -537,8 +561,17 @@ export class NavigatorChart extends BaseChart {
    * @private
    */
   _onSliderMouseDown (ev) {
-    const sliderStartPosition = this._navigatorRange.slice();
-    const sliderMouseMoveListener = this._onSliderMouseMove.bind( this, ev, sliderStartPosition );
+    const {
+      pageX, pageY
+    } = ev;
+
+    this._sliderStartEvent = {
+      pageX, pageY
+    };
+
+    this._sliderStartPosition = this._navigatorRange.slice();
+
+    const sliderMouseMoveListener = this._onSliderMouseMove.bind( this );
 
     const lastBodyStyle = document.body.getAttribute( 'style' );
     setAttributeNS( document.body, 'style', cssText({ cursor: 'grabbing' }), null );
@@ -558,17 +591,15 @@ export class NavigatorChart extends BaseChart {
   }
 
   /**
-   * @param {Event} downEvent
-   * @param {number} startPosition
-   * @param {Event} ev
+   * @param {MouseEvent} ev
    * @private
    */
-  _onSliderMouseMove (downEvent, startPosition, ev) {
+  _onSliderMouseMove (ev) {
     ev.preventDefault();
 
     const {
       pageX: startPageX
-    } = downEvent;
+    } = this._sliderStartEvent;
 
     const {
       pageX = 0
@@ -576,11 +607,124 @@ export class NavigatorChart extends BaseChart {
 
     const positionDelta = ( startPageX - pageX ) / this.navigatorWidth;
 
+    const startPosition = this._sliderStartPosition;
+
     let [ min, max ] = this._clampNavigationRange(
       startPosition[ 0 ] - positionDelta,
       startPosition[ 1 ] - positionDelta,
       true
     );
+
+    this.setNavigationRange( min, max );
+  }
+
+  /**
+   * @param {string} direction
+   * @param {TouchEvent} ev
+   * @private
+   */
+  _onSliderControllerTouchStart (direction, ev) {
+    const {
+      pageX, pageY
+    } = ev.targetTouches[ 0 ];
+
+    this._sliderControllerStartPosition = this._navigatorRange.slice();
+    this._navigatorChangeDirection = direction;
+    this._sliderControllerStartEvent = {
+      pageX, pageY
+    };
+  }
+
+  /**
+   * @param {TouchEvent} ev
+   * @private
+   */
+  _onSliderControllerTouchMove (ev) {
+    const targetTouch = ev.targetTouches[ 0 ];
+
+    const {
+      pageX: startPageX
+    } = this._sliderControllerStartEvent;
+
+    const {
+      pageX = 0
+    } = targetTouch;
+
+    const positionDelta = ( startPageX - pageX ) / this.navigatorWidth;
+    const startPosition = this._sliderControllerStartPosition;
+    const isLeft = this._navigatorChangeDirection === 'left';
+
+    let [ min, max ] = [
+      startPosition[ 0 ] - ( isLeft ? positionDelta : 0 ),
+      startPosition[ 1 ] - ( !isLeft ? positionDelta : 0 )
+    ];
+
+    [ min, max ] = this._clampNavigationRange( min, max );
+
+    if (isLeft) {
+      this._sliderControllerStartPosition[ 1 ] = max;
+    } else {
+      this._sliderControllerStartPosition[ 0 ] = min;
+    }
+
+    this.setNavigationRange( min, max );
+  }
+
+  /**
+   * @param {string} direction
+   * @param {MouseEvent} ev
+   * @private
+   */
+  _onSliderControllerMouseDown (direction, ev) {
+    const {
+      pageX, pageY
+    } = ev;
+
+    this._sliderControllerStartPosition = this._navigatorRange.slice();
+    this._navigatorChangeDirection = direction;
+    this._sliderControllerStartEvent = {
+      pageX, pageY
+    };
+
+    const mouseMoveListener = this._onSliderControllerLeftMouseMove.bind( this );
+
+    document.addEventListener('mousemove', mouseMoveListener);
+    document.addEventListener('mouseup', ev => {
+      document.removeEventListener( 'mousemove', mouseMoveListener )
+    });
+  }
+
+  /**
+   * @param {MouseEvent} ev
+   * @private
+   */
+  _onSliderControllerLeftMouseMove (ev) {
+    ev.preventDefault();
+
+    const {
+      pageX: startPageX
+    } = this._sliderControllerStartEvent;
+
+    const {
+      pageX = 0
+    } = ev;
+
+    const positionDelta = ( startPageX - pageX ) / this.navigatorWidth;
+    const startPosition = this._sliderControllerStartPosition;
+    const isLeft = this._navigatorChangeDirection === 'left';
+
+    let [ min, max ] = [
+      startPosition[ 0 ] - ( isLeft ? positionDelta : 0 ),
+      startPosition[ 1 ] - ( !isLeft ? positionDelta : 0 )
+    ];
+
+    [ min, max ] = this._clampNavigationRange( min, max );
+
+    if (isLeft) {
+      this._sliderControllerStartPosition[ 1 ] = max;
+    } else {
+      this._sliderControllerStartPosition[ 0 ] = min;
+    }
 
     this.setNavigationRange( min, max );
   }
