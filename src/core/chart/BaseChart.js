@@ -1,7 +1,15 @@
 import { EventEmitter } from '../misc/EventEmitter';
 import { SeriesTypes } from '../series/SeriesTypes';
 import { Series } from '../series/Series';
-import { arraysEqual, binarySearchIndexes, clampNumber, ensureNumber, isDate, setAttributeNS } from '../../utils';
+import {
+  arraysEqual,
+  binarySearchIndexes,
+  clampNumber,
+  ensureNumber,
+  getElementOffset,
+  isDate,
+  setAttributeNS
+} from '../../utils';
 import { Tween, TweenEvents } from '../animation/Tween';
 import { ChartTypes } from './ChartTypes';
 import { ChartEvents } from './events/ChartEvents';
@@ -344,10 +352,9 @@ export class BaseChart extends EventEmitter {
 
       // create instance
       const series = new Series( this._renderer, this._seriesGroup, settings );
-      series.initialize();
-
       // provide context for each series
       series.setChart( this );
+      series.initialize();
 
       this._series.push( series );
     }
@@ -766,6 +773,31 @@ export class BaseChart extends EventEmitter {
   }
 
   /**
+   * @param {number} x
+   * @return {number}
+   */
+  projectXToSvg (x) {
+    return this.toRelativeX( x ) / this._viewportPixelX;
+  }
+
+  /**
+   * @param {number} y
+   * @return {number}
+   */
+  projectYToSvg (y) {
+    return this.chartHeight - ( y - this._currentLocalMinY ) / this._viewportPixelY;
+  }
+
+  /**
+   * @param {number} x
+   * @return {number}
+   * @private
+   */
+  toRelativeX (x) {
+    return x - this._viewportRange[ 0 ];
+  }
+
+  /**
    * @return {number}
    */
   get id () {
@@ -805,6 +837,20 @@ export class BaseChart extends EventEmitter {
    */
   get viewportRangeIndexes () {
     return this._viewportRangeIndexes;
+  }
+
+  /**
+   * @return {number}
+   */
+  get viewportPixelX () {
+    return this._viewportPixelX;
+  }
+
+  /**
+   * @return {number}
+   */
+  get viewportPixelY () {
+    return this._viewportPixelY;
   }
 
   /**

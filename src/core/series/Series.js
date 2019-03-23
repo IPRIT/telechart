@@ -1,8 +1,9 @@
 import { EventEmitter } from '../misc/EventEmitter';
-import { arrayMinMax, arraysEqual, setAttributeNS } from '../../utils';
+import { arrayMinMax, arraysEqual, setAttributeNS, setAttributesNS } from '../../utils';
 import { Point } from '../point/Point';
 import { PointGroup } from '../point/PointGroup';
 import { Tween, TweenEvents } from '../animation/Tween';
+import { ChartTypes } from '../chart/ChartTypes';
 
 let SERIES_AUTOINCREMENT = 1;
 
@@ -36,6 +37,12 @@ export class Series extends EventEmitter {
    * @private
    */
   _chart = null;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  _isSimpleChart = false;
 
   /**
    * @type {{xAxis: Array<number>, yAxis: Array<number>, label: string, type: string, name: string, color: string, options: *}}
@@ -116,6 +123,48 @@ export class Series extends EventEmitter {
   _pathUpdateNeeded = false;
 
   /**
+   * @type {SVGCircleElement}
+   * @private
+   */
+  _marker = null;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  _markerVisible = false;
+
+  /**
+   * @type {Tween}
+   * @private
+   */
+  _markerAnimation = null;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _markerRadius = 0;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _maxMarkerRadius = 5;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _markerPointIndex = 0;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  _markerPositionUpdateNeeded = false;
+
+  /**
    * @type {Array<Point>}
    * @private
    */
@@ -189,6 +238,23 @@ export class Series extends EventEmitter {
       this._opacityAnimation.update( deltaTime );
       this.updatePathOpacity();
     }
+
+    // only base charts has markers
+    if (this._isSimpleChart) {
+      if (this._markerPositionUpdateNeeded) {
+        this._updateMarkerPosition();
+
+        this._markerPositionUpdateNeeded = false;
+      }
+
+      const markerAnimation = this._markerAnimation;
+      const hasMarkerAnimation = markerAnimation && markerAnimation.isRunning;
+      if (hasMarkerAnimation) {
+        markerAnimation.update( deltaTime );
+
+        this.updateMarkerRadius();
+      }
+    }
   }
 
   /**
@@ -207,6 +273,10 @@ export class Series extends EventEmitter {
 
     // creates and stores initial path element
     this._createPath();
+
+    if (this._isSimpleChart) {
+      this._createMarker();
+    }
   }
 
   /**
@@ -214,6 +284,7 @@ export class Series extends EventEmitter {
    */
   setChart (chart) {
     this._chart = chart;
+    this._isSimpleChart = chart.chartType === ChartTypes.chart;
   }
 
   /**
@@ -221,7 +292,7 @@ export class Series extends EventEmitter {
    */
   setVisible () {
     this._visible = true;
-    this._createShowingAnimation();
+    this._createShowAnimation();
 
     this.emit( 'visibleChange', this._visible );
   }
@@ -231,7 +302,7 @@ export class Series extends EventEmitter {
    */
   setInvisible () {
     this._visible = false;
-    this._createHidingAnimation();
+    this._createHideAnimation();
 
     this.emit( 'visibleChange', this._visible );
   }
@@ -243,6 +314,22 @@ export class Series extends EventEmitter {
     this._visible
       ? this.setInvisible()
       : this.setVisible();
+  }
+
+  showMarker () {
+    this._createMarkerShowAnimation();
+    this._markerVisible = true;
+  }
+
+  hideMarker () {
+    this._createMarkerHideAnimation();
+    this._markerVisible = false;
+  }
+
+  toggleMarker () {
+    this._markerVisible
+      ? this.hideMarker()
+      : this.showMarker();
   }
 
   /**
@@ -278,8 +365,8 @@ export class Series extends EventEmitter {
       const pointIndex = indexes[ i ];
       const point = this._points[ pointIndex ];
       point.setSvgXY(
-        this._projectXToSvg( point.x ),
-        this._projectYToSvg( point.y ),
+        this._chart.projectXToSvg( point.x ),
+        this._chart.projectYToSvg( point.y ),
       );
     }
   }
@@ -292,8 +379,8 @@ export class Series extends EventEmitter {
     for (let i = startIndex; i <= endIndex; ++i) {
       const point = this._points[ i ];
       point.setSvgXY(
-        this._projectXToSvg( point.x ),
-        this._projectYToSvg( point.y ),
+        this._chart.projectXToSvg( point.x ),
+        this._chart.projectYToSvg( point.y ),
       );
     }
   }
@@ -314,10 +401,25 @@ export class Series extends EventEmitter {
   }
 
   /**
+   * Recompute path text
+   */
+  updateMarkerRadius () {
+    setAttributeNS( this._marker, 'r', this._markerRadius, null );
+  }
+
+  /**
    * Mark to update path in next animation frame
    */
   requestPathUpdate () {
     this._pathUpdateNeeded = true;
+  }
+
+  /**
+   * Mark to update marker in next animation frame
+   */
+  setMarkerPointIndex (index) {
+    this._markerPointIndex = index;
+    this._markerPositionUpdateNeeded = true;
   }
 
   /**
@@ -455,21 +557,31 @@ export class Series extends EventEmitter {
   }
 
   /**
-   * @param {number} x
-   * @return {number}
    * @private
    */
-  _projectXToSvg (x) {
-    return this._toRelativeX( x ) / this._chart._viewportPixelX;
+  _createMarker () {
+    this._marker = this._renderer.createCircle(0, 0, this._markerRadius, {
+      class: 'telechart-chart-marker',
+      stroke: this._color,
+      strokeWidth: 2,
+      fill: 'white'
+    }, this._group);
   }
 
   /**
-   * @param {number} y
-   * @return {number}
    * @private
    */
-  _projectYToSvg (y) {
-    return this._chart.chartHeight - ( y - this._chart.currentLocalMinY ) / this._chart._viewportPixelY;
+  _updateMarkerPosition () {
+    const x = this._xAxis[ this._markerPointIndex ];
+    const y = this._yAxis[ this._markerPointIndex ];
+
+    const svgX = this._chart.projectXToSvg( x );
+    const svgY = this._chart.projectYToSvg( y );
+
+    setAttributesNS(this._marker, {
+      cx: svgX,
+      cy: svgY
+    });
   }
 
   /**
@@ -486,15 +598,6 @@ export class Series extends EventEmitter {
    */
   _onRendererResize () {
     this._pathUpdateNeeded = true;
-  }
-
-  /**
-   * @param {number} x
-   * @return {number}
-   * @private
-   */
-  _toRelativeX (x) {
-    return x - this._chart._viewportRange[ 0 ];
   }
 
   /**
@@ -559,7 +662,7 @@ export class Series extends EventEmitter {
   /**
    * @private
    */
-  _createShowingAnimation () {
+  _createShowAnimation () {
     if (this._opacityAnimation
       && this._opacityAnimationType === OpacityAnimationType.showing) {
       return;
@@ -571,7 +674,7 @@ export class Series extends EventEmitter {
   /**
    * @private
    */
-  _createHidingAnimation () {
+  _createHideAnimation () {
     if (this._opacityAnimation
       && this._opacityAnimationType === OpacityAnimationType.hiding) {
       return;
@@ -600,5 +703,49 @@ export class Series extends EventEmitter {
     this._opacityAnimation.on( TweenEvents.CANCELLED, onFinished );
 
     this._opacityAnimation.start();
+  }
+
+  /**
+   * @private
+   */
+  _createMarkerShowAnimation () {
+    if (this._markerAnimation && this._markerVisible) {
+      // already have animation
+      return;
+    }
+
+    this._createMarkerAnimation( this._maxMarkerRadius );
+  }
+
+  /**
+   * @private
+   */
+  _createMarkerHideAnimation () {
+    if (this._markerAnimation && !this._markerVisible) {
+      // already have animation
+      return;
+    }
+
+    this._createMarkerAnimation( 0 );
+  }
+
+  /**
+   * @param {number} radius
+   * @private
+   */
+  _createMarkerAnimation (radius) {
+    this._markerAnimation = new Tween(this, '_markerRadius', radius, {
+      duration: 200,
+      timingFunction: 'easeInOutCubic'
+    });
+
+    const onFinished = _ => {
+      this._markerAnimation = null;
+    };
+
+    this._markerAnimation.on( TweenEvents.COMPLETE, onFinished );
+    this._markerAnimation.on( TweenEvents.CANCELLED, onFinished );
+
+    this._markerAnimation.start();
   }
 }

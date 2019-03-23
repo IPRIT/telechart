@@ -248,6 +248,29 @@ export class SvgRenderer extends EventEmitter {
   }
 
   /**
+   * @param {number} cx
+   * @param {number} cy
+   * @param {number} radius
+   * @param {*} attrs
+   * @param {SVGElement | Element} parent
+   * @return {SVGCircleElement}
+   */
+  createCircle (cx = 0, cy = 0, radius = 1, attrs = {}, parent = this._svgContainer) {
+    Object.assign(attrs, {
+      cx, cy, r: radius
+    });
+
+    const circleElement = createElement('circle', {
+      useNS: true,
+      attrs
+    }, [], SvgRenderer.NS);
+
+    parent.appendChild( circleElement );
+
+    return circleElement;
+  }
+
+  /**
    * @param {string} selector
    * @return {Element}
    */

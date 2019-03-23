@@ -647,10 +647,6 @@ export class NavigatorChart extends BaseChart {
    * @private
    */
   _onSliderControllerTouchMove (ev) {
-    if (ev.cancelable) {
-      ev.preventDefault();
-    }
-
     const targetTouch = ev.targetTouches[ 0 ];
 
     const {

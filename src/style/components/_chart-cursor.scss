@@ -1,0 +1,6 @@
+@import "../system/index";
+
+@include block('chart-cursor', 'component') {
+  stroke: rgba(163, 196, 220, 0.5) !important;
+  transition: stroke $primary-transition;
+}
