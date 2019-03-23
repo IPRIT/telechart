@@ -294,6 +294,10 @@ export class Chart extends BaseChart {
   _onTouchStart (ev) {
     const targetTouch = ev.targetTouches[ 0 ];
     this._onCursorMove( targetTouch );
+
+    if (this._cursorInsideChart) {
+      ev.preventDefault();
+    }
   }
 
   /**
