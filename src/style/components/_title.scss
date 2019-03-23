@@ -12,4 +12,8 @@
     color: map_get($dark-theme, title-color);
     fill: map_get($dark-theme, title-color);
   }
+
+  @media screen and (max-width: $tablet-width) {
+    user-select: none;
+  }
 }
