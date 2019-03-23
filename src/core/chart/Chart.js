@@ -331,8 +331,21 @@ export class Chart extends BaseChart {
     }
 
     this._axisCursorPositionX = this.projectCursorToX( cursorPosition );
+    this._axisCursorPointIndex = this._findPointIndexByCursor( this._axisCursorPositionX );
+    this._axisCursorUpdateNeeded = true;
 
-    const [ lowerIndex, upperIndex ] = binarySearchIndexes( this.xAxis, this._axisCursorPositionX );
+    this.eachSeries(line => {
+      line.setMarkerPointIndex( this._axisCursorPointIndex );
+    });
+  }
+
+  /**
+   * @param {number} cursorX
+   * @return {number}
+   * @private
+   */
+  _findPointIndexByCursor (cursorX) {
+    const [ lowerIndex, upperIndex ] = binarySearchIndexes( this.xAxis, cursorX );
 
     let index = null;
     if (lowerIndex < 0 && upperIndex >= 0) {
@@ -340,8 +353,8 @@ export class Chart extends BaseChart {
     } else if (lowerIndex >= 0 && upperIndex >= this.xAxis.length) {
       index = lowerIndex;
     } else {
-      const lowerDistance = Math.abs( this._axisCursorPositionX - this.xAxis[ lowerIndex ] );
-      const upperDistance = Math.abs( this._axisCursorPositionX - this.xAxis[ upperIndex ] );
+      const lowerDistance = Math.abs( cursorX - this.xAxis[ lowerIndex ] );
+      const upperDistance = Math.abs( cursorX - this.xAxis[ upperIndex ] );
       const isLowerCloser = lowerDistance <= upperDistance;
 
       const isLowerVisible = this.xAxis[ lowerIndex ] >= this.viewportRange[ 0 ];
@@ -352,12 +365,7 @@ export class Chart extends BaseChart {
         : ( isUpperVisible ? upperIndex : lowerIndex );
     }
 
-    this._axisCursorPointIndex = index;
-    this._axisCursorUpdateNeeded = true;
-
-    this.eachSeries(line => {
-      line.setMarkerPointIndex( index );
-    });
+    return index;
   }
 
   /**
