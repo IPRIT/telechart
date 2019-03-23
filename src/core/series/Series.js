@@ -150,7 +150,7 @@ export class Series extends EventEmitter {
    * @type {number}
    * @private
    */
-  _maxMarkerRadius = 5;
+  _maxMarkerRadius = 4;
 
   /**
    * @type {number}
