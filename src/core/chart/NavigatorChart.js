@@ -23,13 +23,13 @@ export class NavigatorChart extends BaseChart {
    * @type {number}
    * @private
    */
-  _chartHeight = 45;
+  _chartHeight = 40;
 
   /**
    * @type {number}
    * @private
    */
-  _offsetY = 388;
+  _offsetY = 403;
 
   /**
    * @type {number}
