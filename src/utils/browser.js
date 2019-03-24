@@ -31,3 +31,19 @@ try {
 export const isPassiveEventSupported = passiveSupported;
 export const passiveIfSupported = passiveSupported ? { passive: true } : false;
 export const passiveIfSupportedFn = (passive = true) => passiveSupported ? { passive } : false;
+
+/**
+ * @return {*}
+ */
+export function getSupportedTransform () {
+  const prefixes = 'transform WebkitTransform MozTransform OTransform msTransform'.split(' ');
+  const div = document.createElement('div');
+  for (let i = 0; i < prefixes.length; ++i) {
+    if (div && div.style[prefixes[i]] !== undefined) {
+      return prefixes[i];
+    }
+  }
+  return false;
+}
+
+export const isTransformSupported = !!getSupportedTransform();

@@ -4,7 +4,7 @@ import {
   createElement,
   cssText, getDocumentScrollTop,
   getElementHeight, getElementOffset,
-  getElementWidth,
+  getElementWidth, isTransformSupported,
   removeClass,
   setAttributes
 } from '../../utils';
@@ -391,12 +391,17 @@ export class Label extends EventEmitter {
       }
     }
 
+    if (isTransformSupported) {
+      labelTop -= labelTranslateY;
+      labelLeft -= labelTranslateX;
+    }
+
     return {
       translateX: labelTranslateX,
       translateY: labelTranslateY,
 
-      top: labelTop - labelTranslateY,
-      left: labelLeft - labelTranslateX
+      top: labelTop,
+      left: labelLeft
     };
   }
 
@@ -436,12 +441,18 @@ export class Label extends EventEmitter {
    * @private
    */
   _setLabelPosition (position) {
+    const style = {
+      transform: `translate(${position.translateX}px, ${position.translateY}px)`,
+      top: `${position.top}px`,
+      left: `${position.left}px`,
+    };
+
+    if (!isTransformSupported) {
+      delete style.transform;
+    }
+
     setAttributes(this._container, {
-      style: cssText({
-        transform: `translate(${position.translateX}px, ${position.translateY}px)`,
-        top: `${position.top}px`,
-        left: `${position.left}px`,
-      })
+      style: cssText( style )
     });
 
     this._containerPosition = position;
