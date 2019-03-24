@@ -1,5 +1,13 @@
 import { EventEmitter } from '../misc/EventEmitter';
-import { createElement, cssText, getElementHeight, getElementWidth } from '../../utils';
+import {
+  addClass, clampNumber,
+  createElement,
+  cssText, getDocumentScrollTop,
+  getElementHeight, getElementOffset,
+  getElementWidth,
+  removeClass,
+  setAttributes
+} from '../../utils';
 
 let LABEL_ID = 1;
 
@@ -28,6 +36,17 @@ export class Label extends EventEmitter {
    * @private
    */
   _container = null;
+
+  /**
+   * @type {{top: number, left: number, translateY: number, translateX: number}}
+   * @private
+   */
+  _containerPosition = {
+    translateX: 0,
+    translateY: 0,
+    top: 0,
+    left: 0
+  };
 
   /**
    * @type {Element}
@@ -60,6 +79,18 @@ export class Label extends EventEmitter {
   _dataArray = [];
 
   /**
+   * @type {boolean}
+   * @private
+   */
+  _yearVisible = false;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  _hasVisibleData = false;
+
+  /**
    * @param {SvgRenderer} renderer
    */
   constructor (renderer) {
@@ -80,8 +111,18 @@ export class Label extends EventEmitter {
     this._createContent();
   }
 
-  update () {
+  /**
+   * @param {*} deltaTime
+   */
+  update (deltaTime) {
+    if (this._positionUpdateNeeded) {
+      if (this._hasVisibleData) {
+        this.updateDimensions();
+        this.updatePosition();
+      }
 
+      this._positionUpdateNeeded = false;
+    }
   }
 
   /**
@@ -89,13 +130,54 @@ export class Label extends EventEmitter {
    */
   setData (data = []) {
     this._dataArray = data;
+    this._hasVisibleData = this._hasVisibleItems();
 
     this._updateContent();
   }
 
+  showLabel () {
+    addClass(this._container, 'telechart-chart-label_visible');
+  }
+
+  hideLabel () {
+    removeClass(this._container, 'telechart-chart-label_visible');
+  }
+
+  showYear () {
+    this._yearVisible = true;
+  }
+
+  hideYear () {
+    this._yearVisible = false;
+  }
+
   updateDimensions () {
+    if (!this._hasVisibleData) {
+      return;
+    }
+
     this._width = getElementWidth( this._container );
     this._height = getElementHeight( this._container );
+  }
+
+  updatePosition () {
+    if (!this._hasVisibleData) {
+      return;
+    }
+
+    const position = this._clampPosition( this._width, this._height );
+    this._setLabelPosition( position );
+  }
+
+  requestUpdatePosition () {
+    this._positionUpdateNeeded = true;
+  }
+
+  /**
+   * @return {boolean}
+   */
+  get hasVisibleData () {
+    return this._hasVisibleData;
   }
 
   /**
@@ -154,37 +236,37 @@ export class Label extends EventEmitter {
    * @private
    */
   _createTableItem (dataItem) {
+    const value = createElement('div', {
+      attrs: {
+        class: 'telechart-chart-label__table-item-value'
+      }
+    }, String( this._toPrecise( dataItem.y ) ));
+
     const title = createElement('div', {
       attrs: {
         class: 'telechart-chart-label__table-item-title'
       }
     }, dataItem.name);
 
-    const value = createElement('div', {
-      attrs: {
-        class: 'telechart-chart-label__table-item-value'
-      }
-    }, String( 1 * dataItem.y.toFixed( 2 ) ));
-
     return createElement('div', {
       attrs: {
         class: 'telechart-chart-label__table-item',
-        id: this._getTableItemId( dataItem ),
+        id: this._getTableItemId( dataItem.label ),
         style: cssText({
           color: dataItem.color,
           display: dataItem.visible ? 'block' : 'none'
         })
       }
-    }, [ title, value ]);
+    }, [ value, title ]);
   }
 
   /**
-   * @param {*} dataItem
+   * @param {string} label
    * @return {string}
    * @private
    */
-  _getTableItemId (dataItem) {
-    return `telechart-chart-label-${this._id}-${dataItem.label}`;
+  _getTableItemId (label) {
+    return `telechart-chart-label-${this._id}-${label}`;
   }
 
   /**
@@ -192,11 +274,185 @@ export class Label extends EventEmitter {
    */
   _updateContent () {
     // update inner content
-    this._tableElement.innerHTML = '';
-    const items = this._generateTable();
+    const data = this._dataArray;
 
-    for (let i = 0; i < items.length; ++i) {
-      this._tableElement.appendChild( items[ i ] );
+    this._updateTitle( data[ 0 ].x );
+
+    for (let i = 0; i < data.length; ++i) {
+      const dataItem = data[ i ];
+      if (dataItem.visible) {
+        const label = dataItem.label;
+        this._updateTableItem( label, dataItem );
+      }
     }
+
+    if (!this._hasVisibleData) {
+      this.hideLabel();
+    }
+  }
+
+  /**
+   * @param ms
+   * @private
+   */
+  _updateTitle (ms) {
+    const date = new Date( ms );
+    const dateFormatted = date.toUTCString();
+    const dateRegex = /([a-zA-Z]+),\s?\d{1,2}\s([a-zA-Z]+)/i;
+    const dateMatch = dateFormatted.match( dateRegex );
+    const dayText = dateMatch[ 1 ];
+    const monthText = dateMatch[ 2 ];
+
+    let title = `${dayText}, ${monthText} ${date.getDate()}`;
+
+    if (this._yearVisible) {
+      title += ` ${date.getFullYear()}`;
+    }
+
+    this._dateElement.innerHTML = title;
+  }
+
+  /**
+   * @private
+   */
+  _updateTableItem (label, dataItem) {
+    const id = this._getTableItemId( label );
+    let element = this._tableElement.querySelector( `#${id}` );
+
+    if (!element) {
+      element = this._createTableItem( dataItem );
+      this._tableElement.appendChild( element );
+    }
+
+    const titleElement = element.querySelector( '.telechart-chart-label__table-item-title' );
+    const valueElement = element.querySelector( '.telechart-chart-label__table-item-value' );
+
+    // update styles
+    setAttributes(element, {
+      style: cssText({
+        color: dataItem.color,
+        display: dataItem.visible ? 'block' : 'none'
+      })
+    });
+
+    titleElement.innerHTML = dataItem.name;
+    valueElement.innerHTML = String( this._toPrecise( dataItem.y ) );
+  }
+
+  /**
+   * @param {number} value
+   * @param {number} precise
+   * @return {number}
+   * @private
+   */
+  _toPrecise (value, precise = 2) {
+    return 1 * value.toFixed( precise );
+  }
+
+  /**
+   * @param {number} width
+   * @param {number} height
+   * @return {{top: number, left: number, translateY: number, translateX: number}}
+   * @private
+   */
+  _clampPosition (width, height) {
+    const chartWidth = this._renderer.width;
+    const labelWidth = this._width;
+    const labelHeight = this._height;
+    const { left: cursorLeft, top: cursorTop } = this._getCursorOffset();
+    const leftRightPadding = 4;
+    const labelPadding = 8;
+
+    let labelTranslateX = clampNumber( cursorLeft - 30, leftRightPadding, chartWidth - labelWidth - leftRightPadding );
+    let labelTranslateY = 40;
+
+    let labelLeft = labelTranslateX;
+    let labelTop = labelTranslateY;
+
+    let labelBottomLine = labelTranslateY + labelHeight + leftRightPadding;
+
+    if (labelBottomLine > cursorTop) {
+      let possibleLabelLeft1 = cursorLeft + labelPadding;
+      if (possibleLabelLeft1 + labelWidth <= chartWidth) {
+        labelLeft = possibleLabelLeft1;
+      } else {
+        let possibleLabelLeft2 = cursorLeft - labelWidth - labelPadding;
+        if (possibleLabelLeft2 >= 0) {
+          labelLeft = possibleLabelLeft2;
+        } else {
+          let possibleLabelTop1 = cursorTop - labelHeight - labelPadding;
+          let documentScrollTop = getDocumentScrollTop();
+          let { top: chartOffsetTop } = getElementOffset( this._renderer.parentContainer );
+
+          if (chartOffsetTop + possibleLabelTop1 >= documentScrollTop) {
+            labelTop = possibleLabelTop1;
+          }
+        }
+      }
+    }
+
+    return {
+      translateX: labelTranslateX,
+      translateY: labelTranslateY,
+
+      top: labelTop - labelTranslateY,
+      left: labelLeft - labelTranslateX
+    };
+  }
+
+  /**
+   * @return {{top: number, left: number}}
+   * @private
+   */
+  _getCursorOffset () {
+    const noop = { left: 0, top: 0 };
+
+    if (!this._dataArray.length) {
+      return noop;
+    }
+
+    const chartOffsetY = this._chart._seriesGroupTop || 0;
+
+    let minIndex = -1;
+    let minY = 1e9;
+    for (let i = 0; i < this._dataArray.length; ++i) {
+      const dataItem = this._dataArray[ i ];
+      if (dataItem.visible && minY > dataItem.svgY) {
+        minIndex = i;
+        minY = dataItem.svgY;
+      }
+    }
+
+    const point = this._dataArray[ minIndex ];
+
+    return {
+      left: point.svgX,
+      top: point.svgY + chartOffsetY
+    };
+  }
+
+  /**
+   * @param {{top: number, left: number, translateY: number, translateX: number}} position
+   * @private
+   */
+  _setLabelPosition (position) {
+    setAttributes(this._container, {
+      style: cssText({
+        transform: `translate(${position.translateX}px, ${position.translateY}px)`,
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+      })
+    });
+
+    this._containerPosition = position;
+  }
+
+  /**
+   * @return {boolean}
+   * @private
+   */
+  _hasVisibleItems () {
+    return this._dataArray.length > 0
+      && this._dataArray.filter(item => item.visible).length > 0;
   }
 }

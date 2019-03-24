@@ -1,6 +1,11 @@
 import { EventEmitter } from '../misc/EventEmitter';
 import { SeriesTypes } from '../series/SeriesTypes';
 import { Series } from '../series/Series';
+import { Tween, TweenEvents } from '../animation/Tween';
+import { ChartTypes } from './ChartTypes';
+import { ChartEvents } from './events/ChartEvents';
+import { Label } from './Label';
+
 import {
   arraysEqual,
   binarySearchIndexes,
@@ -10,10 +15,6 @@ import {
   isDate,
   setAttributeNS
 } from '../../utils';
-import { Tween, TweenEvents } from '../animation/Tween';
-import { ChartTypes } from './ChartTypes';
-import { ChartEvents } from './events/ChartEvents';
-import { Label } from './Label';
 
 let CHART_ID = 1;
 
@@ -339,6 +340,10 @@ export class BaseChart extends EventEmitter {
 
       line.update( deltaTime );
     });
+
+    if (this._label) {
+      this._label.update( deltaTime );
+    }
   }
 
   /**
@@ -1322,6 +1327,8 @@ export class BaseChart extends EventEmitter {
       return;
     }
 
+    const oldIndex = this._axisCursorPointIndex;
+
     this._axisCursorPositionX = this.projectCursorToX( cursorPosition );
     this._axisCursorPointIndex = this._findPointIndexByCursor( this._axisCursorPositionX );
     this._axisCursorUpdateNeeded = true;
@@ -1330,16 +1337,28 @@ export class BaseChart extends EventEmitter {
       line.setMarkerPointIndex( this._axisCursorPointIndex );
     });
 
-    this._updateLabelData();
+    this._updateLabel( this._axisCursorPointIndex !== oldIndex );
   }
 
   /**
    * @private
    */
-  _updateLabelData () {
+  _updateLabel (changed = true) {
     this._label.setData(
       this._prepareLabelData()
     );
+
+    const date1 = new Date( this._viewportRange[ 0 ] );
+    const date2 = new Date( this._viewportRange[ 1 ] );
+    if (date1.getFullYear() !== date2.getFullYear()) {
+      this._label.showYear();
+    } else {
+      this._label.hideYear();
+    }
+
+    if (changed) {
+      this._label.requestUpdatePosition();
+    }
   }
 
   /**
@@ -1415,9 +1434,11 @@ export class BaseChart extends EventEmitter {
     if (isInside) {
       this._showMarkers();
       this._showCursor();
+      this._label.showLabel();
     } else {
       this._hideMarkers();
       this._hideCursor();
+      this._label.hideLabel();
     }
   }
 
@@ -1487,7 +1508,9 @@ export class BaseChart extends EventEmitter {
         name: line.name,
         visible: line.isVisible,
         x,
-        y: line._yAxis[ index ]
+        y: line._yAxis[ index ],
+        svgY: this.projectYToSvg( line._yAxis[ index ] ),
+        svgX: this.projectXToSvg( line._xAxis[ index ] )
       });
     });
 

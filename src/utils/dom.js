@@ -219,7 +219,7 @@ export function setAttributeNS (element, attr, value, ns) {
  */
 export function hasClass (element, className) {
   if (element.classList) {
-    return element.classList.contains( className );
+    // return element.classList.contains( className );
   }
   return new RegExp('(\\s|^)' + className + '(\\s|$)').test( element.className );
 }
@@ -232,7 +232,7 @@ export function addClass (element, classNames = []) {
   classNames = [].concat( classNames );
 
   if (element.classList) {
-    return element.classList.add( ...classNames );
+    // return element.classList.add( ...classNames );
   }
 
   let className = element.className;
@@ -254,7 +254,7 @@ export function removeClass (element, classNames = []) {
   classNames = [].concat( classNames );
 
   if (element.classList) {
-    return element.classList.remove( ...classNames );
+    // return element.classList.remove( ...classNames );
   }
 
   let existingClasses = element.className.split( ' ' );
