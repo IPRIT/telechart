@@ -1,5 +1,6 @@
 export * from './constants';
 export * from './animation';
+export * from './ripple';
 export * from './base';
 export * from './browser';
 export * from './dom';

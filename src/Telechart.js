@@ -17,6 +17,7 @@ import {
   cssText, createElement, ROOT_CLASS_NAME
 } from "./utils";
 import { NavigatorChartEvents } from './core/chart/events/NavigatorChartEvents';
+import { LabelButtons } from './core/chart/LabelButtons';
 
 let TELECHART_ID = 1;
 
@@ -57,6 +58,12 @@ export class Telechart {
    * @private
    */
   _navigatorChart = null;
+
+  /**
+   * @type {LabelButtons}
+   * @private
+   */
+  _labelButtons = null;
 
   /**
    * @type {string}
@@ -138,6 +145,7 @@ export class Telechart {
     // create components
     this._createChart();
     this._createNavigatorChart();
+    this._createLabelButtons();
     this._addEventsListeners();
 
     // create animation loop
@@ -307,6 +315,17 @@ export class Telechart {
     );
 
     this._navigatorChart.initialize();
+  }
+
+  /**
+   * @private
+   */
+  _createLabelButtons () {
+    const labelButtons = new LabelButtons( this._renderer );
+    labelButtons.setChart( this._chart );
+    labelButtons.initialize();
+
+    this._labelButtons = labelButtons;
   }
 
   /**

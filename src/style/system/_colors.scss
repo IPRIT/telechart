@@ -2,3 +2,6 @@ $dark-color: #242F3E;
 
 $link-color: #108BE3;
 $link-color-dark: #36A8F1;
+
+$cursor-color: rgba(163, 196, 220, 0.5);
+$border-color: transparentize( $cursor-color, .1 );

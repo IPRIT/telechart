@@ -187,7 +187,10 @@ export class Label extends EventEmitter {
     const parent = this._renderer.parentContainer;
     const container = createElement('div', {
       attrs: {
-        class: 'telechart-chart-label'
+        class: 'telechart-chart-label',
+        style: cssText({
+          opacity: 0
+        })
       }
     });
 
@@ -386,6 +389,8 @@ export class Label extends EventEmitter {
 
           if (chartOffsetTop + possibleLabelTop1 >= documentScrollTop) {
             labelTop = possibleLabelTop1;
+          } else {
+            labelTop = documentScrollTop - chartOffsetTop;
           }
         }
       }

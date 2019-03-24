@@ -39,7 +39,7 @@ export class SvgRenderer extends EventEmitter {
    * @type {number}
    * @private
    */
-  _minHeight = 450;
+  _minHeight = 440;
 
   /**
    * @type {number}
