@@ -7,36 +7,11 @@ import {
   cssText, isBrowserSafari,
   parseQueryString,
   removeClass,
-  setAttributes, TimeRanges
+  setAttributes
 } from '../src/utils';
 
 const query = parseQueryString( location.search );
 let currentThemeName = query && query.theme || 'default';
-
-const largeAxisX = [ 'x' ];
-const largeAxisY1 = [ 'y0' ];
-const largeAxisY2 = [ 'y1' ];
-const size = 1e3;
-const initialDate = Date.now() - TimeRanges.year * 5;
-const endDate = Date.now();
-const dateTick = (endDate - initialDate) / size;
-
-for (let i = 0; i < size; ++i) {
-  largeAxisX.push( Math.floor( initialDate + dateTick * i + dateTick * (Math.random() * .5 - .5 / 2) ) );
-  largeAxisY1.push( Math.sin( i * .04 ) * 1000 + Math.random() * 10 - 10 / 2 );
-  largeAxisY2.push( Math.cos( i * .04 ) * 600 + Math.random() * 20 - 20 / 2 );
-}
-
-sourceData.push({
-  columns: [
-    largeAxisX,
-    largeAxisY1,
-    largeAxisY2
-  ],
-  names: Object.assign( {}, { y0: 'Joined', y1: 'Left' } ),
-  types: Object.assign( {}, sourceData[ 0 ].types ),
-  colors: Object.assign( {}, sourceData[ 0 ].colors )
-});
 
 const charts = window.charts = [];
 
@@ -48,7 +23,7 @@ const count = 6;
 sourceData
   .slice(from, from + count)
   .map((chartData, index) => {
-    return animationTimeout( 0 * 20 * index, [ chartData, index ] );
+    return animationTimeout( 0, [ chartData, index ] );
   })
   .map(animation => {
     animation.then(([ chartData, index ]) => createChart( chartData, index )).catch( console.error );
