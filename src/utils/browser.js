@@ -35,15 +35,11 @@ export const passiveIfSupportedFn = (passive = true) => passiveSupported ? { pas
 /**
  * @return {*}
  */
-export function getSupportedTransform () {
-  const prefixes = 'transform WebkitTransform MozTransform OTransform msTransform'.split(' ');
+export function isTransformAvailable () {
+  const prefix = 'transform';
   const div = document.createElement('div');
-  for (let i = 0; i < prefixes.length; ++i) {
-    if (div && div.style[prefixes[i]] !== undefined) {
-      return prefixes[i];
-    }
-  }
-  return false;
+
+  return div && div.style[ prefix ] !== undefined;
 }
 
-export const isTransformSupported = !!getSupportedTransform();
+export const isTransformSupported = isTransformAvailable();
