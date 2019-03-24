@@ -29,7 +29,7 @@ export class NavigatorChart extends BaseChart {
    * @type {number}
    * @private
    */
-  _offsetY = 393;
+  _offsetY = 388;
 
   /**
    * @type {number}
@@ -198,8 +198,9 @@ export class NavigatorChart extends BaseChart {
       this._navigatorRangeAnimation.update( deltaTime );
 
       this.updateNavigationRange(
-        ...[ this._navigationRangeAnimationObject.from, this._navigationRangeAnimationObject.to ]
-      )
+        this._navigationRangeAnimationObject.from,
+        this._navigationRangeAnimationObject.to
+      );
     }
 
     if (this._sliderUpdateNeeded) {

@@ -218,6 +218,36 @@ export class BaseChart extends EventEmitter {
   _rangeAnimationObject = {};
 
   /**
+   * @type {boolean}
+   * @private
+   */
+  _cursorInsideChart = false;
+
+  /**
+   * @type {SVGPathElement}
+   * @private
+   */
+  _axisCursor = null;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _axisCursorPositionX = 0;
+
+  /**
+   * @type {number}
+   * @private
+   */
+  _axisCursorPointIndex = 0;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  _axisCursorUpdateNeeded = false;
+
+  /**
    * @param {SvgRenderer} renderer
    * @param {Object} options
    */
@@ -239,18 +269,21 @@ export class BaseChart extends EventEmitter {
 
     this.setInitialRange();
     this.approximateViewportPoints();
+
+    if (this._type === ChartTypes.chart) {
+      this.initializeAxisCursor();
+    }
   }
 
   /**
    * @param {number} deltaTime
    */
   update (deltaTime) {
-    let extremesUpdated = false;
+    const minMaxYAnimation = this._minMaxYAnimation;
+    const extremesUpdated = minMaxYAnimation && minMaxYAnimation.isRunning;
 
-    if (this._minMaxYAnimation && this._minMaxYAnimation.isRunning) {
+    if (extremesUpdated) {
       this._minMaxYAnimation.update( deltaTime );
-
-      extremesUpdated = true;
     }
 
     const hasRangeAnimation = this._rangeAnimation && this._rangeAnimation.isRunning;
@@ -263,6 +296,7 @@ export class BaseChart extends EventEmitter {
           this._rangeAnimationObject.from,
           this._rangeAnimationObject.to
         ], { skipExtremes: false });
+
       } else {
         this.updateViewportRange();
       }
@@ -278,6 +312,13 @@ export class BaseChart extends EventEmitter {
 
     if (extremesUpdated) {
       this.updateViewportPixel();
+    }
+
+    // cursor updating
+    if (this._axisCursorUpdateNeeded && this.isChart) {
+      this._updateAxisCursor();
+
+      this._axisCursorUpdateNeeded = false;
     }
 
     this.eachSeries(line => {
@@ -408,6 +449,14 @@ export class BaseChart extends EventEmitter {
   }
 
   /**
+   * Creates chart cursor
+   */
+  initializeAxisCursor () {
+    this._createAxisCursor();
+    this._addAxisCursorEvents();
+  }
+
+  /**
    * Sets initial viewport range for the chart
    */
   setInitialRange () {
@@ -499,8 +548,11 @@ export class BaseChart extends EventEmitter {
       this.updateLocalExtremes();
     }
 
-    // recompute pixel value (e.g. for animation)
+    // recompute pixel values
     this.updateViewportPixel();
+
+    // update cursor in next animation frame
+    this._axisCursorUpdateNeeded = true;
   }
 
   /**
@@ -679,11 +731,12 @@ export class BaseChart extends EventEmitter {
    * Resize event handler
    */
   onRendererResize () {
-    // making request for future animation update
+    // making requests for future animation update
     this._viewportRangeUpdateNeeded = true;
     this._viewportPointsGroupingNeeded = true;
+    this._axisCursorUpdateNeeded = true;
 
-    this._updateMaskDimensions()
+    this._updateMaskDimensions();
   }
 
   /**
@@ -789,6 +842,18 @@ export class BaseChart extends EventEmitter {
   }
 
   /**
+   * @param {number} pageX
+   * @param {number} pageY
+   * @return {number}
+   */
+  projectCursorToX ({ pageX = 0, pageY = 0 }) {
+    const { left } = getElementOffset( this.renderer.svgContainer );
+    const chartLeft = pageX - left;
+
+    return this.viewportRange[ 0 ] + chartLeft * this.viewportPixelX;
+  }
+
+  /**
    * @param {number} x
    * @return {number}
    * @private
@@ -809,6 +874,20 @@ export class BaseChart extends EventEmitter {
    */
   get chartType () {
     return this._type;
+  }
+
+  /**
+   * @return {boolean}
+   */
+  get isChart () {
+    return this._type === ChartTypes.chart;
+  }
+
+  /**
+   * @return {boolean}
+   */
+  get isNavigatorChart () {
+    return this._type === ChartTypes.navigatorChart;
   }
 
   /**
@@ -928,13 +1007,6 @@ export class BaseChart extends EventEmitter {
    */
   get defs () {
     return this._defs;
-  }
-
-  /**
-   * @return {number}
-   */
-  get navigatorDistanceScale () {
-    return this._navigatorDistanceScale;
   }
 
   /**
@@ -1085,5 +1157,289 @@ export class BaseChart extends EventEmitter {
     }
     const rect = this._chartMask.querySelector( 'rect' );
     setAttributeNS( rect, 'width', this.chartWidth, null );
+  }
+
+  /**
+   * @private
+   */
+  _createAxisCursor () {
+    const pathText = this._computeAxisCursorPath();
+
+    this._axisCursor = this.renderer.createPath(pathText, {
+      class: 'telechart-chart-cursor',
+      strokeWidth: 1,
+      stroke: '#ccc'
+    }, this._axisCursorGroup);
+
+    this._axisCursorGroup = this.renderer.createGroup({
+      class: 'telechart-chart-cursor-group',
+      transform: `translate(0, ${this._seriesGroupTop}) scale(1 1)`
+    }, this._axisCursor);
+
+    this.renderer.svgContainer.insertBefore( this._axisCursorGroup, this._seriesGroup );
+  }
+
+  /**
+   * @private
+   */
+  _updateAxisCursor () {
+    this.renderer.updatePath( this._axisCursor, this._computeAxisCursorPath() );
+  }
+
+  /**
+   * @return {string}
+   * @private
+   */
+  _computeAxisCursorPath () {
+    const x = this.xAxis[ this._axisCursorPointIndex ];
+    const svgX = this.projectXToSvg( x );
+
+    return `M${svgX} 0L${svgX} ${this.chartHeight}`;
+  }
+
+  /**
+   * @private
+   */
+  _addAxisCursorEvents () {
+    const mouseMoveListener = this._onMouseMove.bind( this );
+    const mouseLeaveListener = this._onMouseLeave.bind( this );
+
+    const touchStartListener = this._onTouchStart.bind( this );
+    const touchMoveListener = this._onTouchMove.bind( this );
+    const touchEndListener = this._onTouchEnd.bind( this );
+
+    this.renderer.svgContainer.addEventListener( 'touchstart', touchStartListener, { passive: false } );
+    this.renderer.svgContainer.addEventListener( 'touchmove', touchMoveListener, { passive: false } );
+    this.renderer.svgContainer.addEventListener( 'touchend', touchEndListener );
+
+    this.renderer.svgContainer.addEventListener( 'mousemove', mouseMoveListener );
+    this.renderer.svgContainer.addEventListener( 'mouseleave', mouseLeaveListener );
+  }
+
+  /**
+   * @param {MouseEvent} ev
+   * @private
+   */
+  _onMouseMove (ev) {
+    this._onCursorMove( ev );
+  }
+
+  /**
+   * @param {MouseEvent} ev
+   * @private
+   */
+  _onMouseLeave (ev) {
+    this._onCursorLeave();
+  }
+
+  /**
+   * @param {TouchEvent} ev
+   * @private
+   */
+  _onTouchStart (ev) {
+    const targetTouch = ev.targetTouches[ 0 ];
+
+    this._touchStartPosition = {
+      pageX: targetTouch.pageX,
+      pageY: targetTouch.pageY
+    };
+
+    this._onCursorMove( targetTouch );
+
+    if (this._cursorInsideChart) {
+      // ev.preventDefault();
+    }
+  }
+
+  /**
+   * @param {TouchEvent} ev
+   * @private
+   */
+  _onTouchMove (ev) {
+    const targetTouch = ev.targetTouches[ 0 ];
+
+    this._onCursorMove( targetTouch );
+
+    if (this._isScrollingAction === null) {
+      const {
+        pageX: startPageX,
+        pageY: startPageY
+      } = this._touchStartPosition;
+
+      const deltaY = Math.abs( startPageY - targetTouch.pageY );
+      const deltaX = Math.abs( startPageX - targetTouch.pageX );
+
+      this._isScrollingAction = deltaY >= deltaX;
+    }
+
+    if (this._cursorInsideChart
+      && !this._isScrollingAction) {
+      ev.preventDefault();
+    }
+  }
+
+  /**
+   * @param {TouchEvent} ev
+   * @private
+   */
+  _onTouchEnd (ev) {
+    if (this._cursorInsideChart && ev.cancelable) {
+      ev.preventDefault();
+    }
+
+    this._isScrollingAction = null;
+    this._onCursorLeave();
+  }
+
+  /**
+   * @param cursorPosition
+   * @private
+   */
+  _onCursorMove (cursorPosition) {
+    const insideChart = this._insideChart( cursorPosition );
+
+    this._setInsideChartState(
+      insideChart
+    );
+
+    if (!insideChart) {
+      return;
+    }
+
+    this._axisCursorPositionX = this.projectCursorToX( cursorPosition );
+    this._axisCursorPointIndex = this._findPointIndexByCursor( this._axisCursorPositionX );
+    this._axisCursorUpdateNeeded = true;
+
+    this.eachSeries(line => {
+      line.setMarkerPointIndex( this._axisCursorPointIndex );
+    });
+  }
+
+  /**
+   * @param {number} cursorX
+   * @return {number}
+   * @private
+   */
+  _findPointIndexByCursor (cursorX) {
+    const [ lowerIndex, upperIndex ] = binarySearchIndexes( this.xAxis, cursorX );
+
+    let index = null;
+    if (lowerIndex < 0 && upperIndex >= 0) {
+      index = upperIndex;
+    } else if (lowerIndex >= 0 && upperIndex >= this.xAxis.length) {
+      index = lowerIndex;
+    } else {
+      const lowerDistance = Math.abs( cursorX - this.xAxis[ lowerIndex ] );
+      const upperDistance = Math.abs( cursorX - this.xAxis[ upperIndex ] );
+      const isLowerCloser = lowerDistance <= upperDistance;
+
+      const isLowerVisible = this.xAxis[ lowerIndex ] >= this.viewportRange[ 0 ];
+      const isUpperVisible = this.xAxis[ upperIndex ] <= this.viewportRange[ 1 ];
+
+      index = isLowerCloser
+        ? ( isLowerVisible ? lowerIndex : upperIndex )
+        : ( isUpperVisible ? upperIndex : lowerIndex );
+    }
+
+    return index;
+  }
+
+  /**
+   * @private
+   */
+  _onCursorLeave () {
+    this._setInsideChartState( false );
+  }
+
+  /**
+   * @param {boolean} isInside
+   * @private
+   */
+  _setInsideChartState (isInside) {
+    const changed = this._cursorInsideChart !== isInside;
+    if (!changed) {
+      return;
+    }
+
+    this._cursorInsideChart = isInside;
+
+    if (this._markerHideTimeout) {
+      clearTimeout( this._markerHideTimeout );
+      this._markerHideTimeout = null;
+    }
+
+    const change = _ => {
+      this._onCursorInsideChartChanged( isInside );
+    };
+
+    if (!isInside) {
+      // create short delay for cursor & markers hiding
+      this._markerHideTimeout = setTimeout( change , 1000 );
+    } else {
+      change();
+    }
+  }
+
+  /**
+   * @param {boolean} isInside
+   * @private
+   */
+  _onCursorInsideChartChanged (isInside) {
+    if (isInside) {
+      this._showMarkers();
+      this._showCursor();
+    } else {
+      this._hideMarkers();
+      this._hideCursor();
+    }
+  }
+
+  /**
+   * @private
+   */
+  _showMarkers () {
+    this.eachSeries(line => {
+      if (line.isVisible) {
+        line.showMarker();
+      }
+    });
+  }
+
+  /**
+   * @private
+   */
+  _hideMarkers () {
+    this.eachSeries(line => {
+      line.hideMarker();
+    });
+  }
+
+  /**
+   * @private
+   */
+  _showCursor () {
+    setAttributeNS( this._axisCursor, 'stroke-opacity', 1, null );
+  }
+
+  /**
+   * @private
+   */
+  _hideCursor () {
+    setAttributeNS( this._axisCursor, 'stroke-opacity', 0, null );
+  }
+
+  /**
+   * @param {number} pageX
+   * @param {number} pageY
+   * @return {boolean}
+   * @private
+   */
+  _insideChart ({ pageX, pageY }) {
+    const { top, left } = getElementOffset( this.renderer.svgContainer );
+    const chartTop = pageY - top - this._seriesGroupTop;
+    const chartLeft = pageX - left;
+
+    return chartTop >= 0 && chartTop <= this.chartHeight
+      && chartLeft >= 0 && chartLeft <= this.chartWidth;
   }
 }

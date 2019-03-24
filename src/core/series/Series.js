@@ -226,11 +226,14 @@ export class Series extends EventEmitter {
    * @param {number} deltaTime
    */
   update (deltaTime) {
+    let pathUpdated = false;
+
     if (this._pathUpdateNeeded) {
       this.updateViewportPoints();
       this.updatePath();
 
       this._pathUpdateNeeded = false;
+      pathUpdated = true;
     }
 
     if (this._opacityAnimation
@@ -241,7 +244,7 @@ export class Series extends EventEmitter {
 
     // only base charts has markers
     if (this._isSimpleChart) {
-      if (this._markerPositionUpdateNeeded) {
+      if (this._markerPositionUpdateNeeded || pathUpdated) {
         this._updateMarkerPosition();
 
         this._markerPositionUpdateNeeded = false;
@@ -735,7 +738,7 @@ export class Series extends EventEmitter {
    */
   _createMarkerAnimation (radius) {
     this._markerAnimation = new Tween(this, '_markerRadius', radius, {
-      duration: 200,
+      duration: 300,
       timingFunction: 'easeInOutCubic'
     });
 
