@@ -166,9 +166,9 @@ export class Telechart {
   animate () {
     const deltaTime = this._clock.getDelta();
 
-    if (this.inWindowViewport) {
-      this._animationSource.update( deltaTime );
-    }
+    // if (this.inWindowViewport) {
+    this._animationSource.update( deltaTime );
+    // }
 
     requestAnimationFrame(_ => this.animate());
   }
