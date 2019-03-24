@@ -33,7 +33,7 @@ sourceData.push({
     largeAxisY1,
     largeAxisY2
   ],
-  names: Object.assign( {}, sourceData[ 0 ].names ),
+  names: Object.assign( {}, { y0: 'Joined', y1: 'Left' } ),
   types: Object.assign( {}, sourceData[ 0 ].types ),
   colors: Object.assign( {}, sourceData[ 0 ].colors )
 });
