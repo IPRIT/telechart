@@ -38,8 +38,6 @@ const ripple = {
     const x = value.center ? '50%' : `${e.clientX - offset.left}px`;
     const y = value.center ? '50%' : `${e.clientY - offset.top}px`;
 
-    console.log( x, y );
-
     animation.classList.add('telechart-ripple__animation_enter');
     animation.classList.add('telechart-ripple__animation_visible');
     style(animation, `translate(-50%, -50%) translate(${x}, ${y}) scale3d(0.01,0.01,0.01)`);

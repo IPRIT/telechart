@@ -43,22 +43,6 @@ export class Chart extends BaseChart {
       transform: `translate(0, ${this._seriesGroupTop}) scale(1 1)`,
       mask: `url(#${this.chartMaskId})`
     });
-
-    this.renderer.createRect(this.renderer.width, '1px', {
-      fill: '#ccc',
-      y: 1,
-      style: cssText({
-        shapeRendering: 'crispEdges'
-      })
-    }, this._seriesGroup);
-
-    this.renderer.createRect(this.renderer.width, '1px', {
-      fill: '#ccc',
-      y: this.chartHeight,
-      style: cssText({
-        shapeRendering: 'crispEdges'
-      })
-    }, this._seriesGroup);
   }
 
   /**

@@ -214,6 +214,15 @@ export function setAttributeNS (element, attr, value, ns) {
 }
 
 /**
+ * @param element
+ */
+export function removeElement (element) {
+  if (element && element.parentNode) {
+    element.parentNode.removeChild( element );
+  }
+}
+
+/**
  * @param {Element} element
  * @param {string} className
  */

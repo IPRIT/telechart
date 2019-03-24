@@ -15,6 +15,7 @@ import {
   isDate,
   setAttributeNS
 } from '../../utils';
+import { ChartAxisY } from './axis/ChartAxisY';
 
 let CHART_ID = 1;
 
@@ -256,6 +257,12 @@ export class BaseChart extends EventEmitter {
   _label = null;
 
   /**
+   * @type {ChartAxisY}
+   * @private
+   */
+  _yAxisView = null;
+
+  /**
    * @param {SvgRenderer} renderer
    * @param {Object} options
    */
@@ -281,6 +288,7 @@ export class BaseChart extends EventEmitter {
     if (this._type === ChartTypes.chart) {
       this.initializeAxisCursor();
       this.initializeLabel();
+      this.initializeAxisY();
     }
   }
 
@@ -343,6 +351,14 @@ export class BaseChart extends EventEmitter {
 
     if (this._label) {
       this._label.update( deltaTime );
+    }
+
+    if (this._yAxisView) {
+      if (extremesUpdated) {
+        this._yAxisView.requestUpdatePosition();
+      }
+
+      this._yAxisView.update( deltaTime );
     }
   }
 
@@ -479,6 +495,18 @@ export class BaseChart extends EventEmitter {
     label.initialize();
 
     this._label = label;
+  }
+
+  /**
+   * Creates y axis
+   */
+  initializeAxisY () {
+    const yAxisView = new ChartAxisY( this._renderer );
+
+    yAxisView.setChart( this );
+    yAxisView.initialize();
+
+    this._yAxisView = yAxisView;
   }
 
   /**
@@ -708,6 +736,10 @@ export class BaseChart extends EventEmitter {
 
     if (updateAnimation) {
       this._updateOrCreateMinMaxYAnimation();
+
+      if (this._yAxisView) {
+        this._yAxisView.updateAnimations();
+      }
     }
   }
 
@@ -762,6 +794,10 @@ export class BaseChart extends EventEmitter {
     this._axisCursorUpdateNeeded = true;
 
     this._updateMaskDimensions();
+
+    if (this._yAxisView) {
+      this._yAxisView.onChartResize();
+    }
   }
 
   /**
@@ -863,7 +899,8 @@ export class BaseChart extends EventEmitter {
    * @return {number}
    */
   projectYToSvg (y) {
-    return this.chartHeight - ( y - this._currentLocalMinY ) / this._viewportPixelY;
+    const svgY = this.chartHeight - ( y - this._currentLocalMinY ) / this._viewportPixelY;
+    return clampNumber( svgY, -1e6, 1e6 );
   }
 
   /**
@@ -960,6 +997,13 @@ export class BaseChart extends EventEmitter {
   /**
    * @return {number}
    */
+  get viewportPadding () {
+    return this._viewportPadding;
+  }
+
+  /**
+   * @return {number}
+   */
   get localExtremeDifference () {
     return this._localMaxY - this._localMinY;
   }
@@ -1032,6 +1076,13 @@ export class BaseChart extends EventEmitter {
    */
   get defs () {
     return this._defs;
+  }
+
+  /**
+   * @return {number}
+   */
+  get seriesGroupTop () {
+    return this._seriesGroupTop;
   }
 
   /**
@@ -1193,6 +1244,7 @@ export class BaseChart extends EventEmitter {
     this._axisCursor = this.renderer.createPath(pathText, {
       class: 'telechart-chart-cursor',
       strokeWidth: 1,
+      strokeOpacity: 0,
       stroke: '#ccc'
     }, this._axisCursorGroup);
 

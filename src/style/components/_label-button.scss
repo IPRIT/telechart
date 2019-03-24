@@ -11,6 +11,7 @@
 
   &:not(:last-of-type) {
     margin-right: 16px;
+    margin-bottom: 16px;
   }
 
   @media screen and (min-width: $tablet-width) {
@@ -68,6 +69,7 @@
     display: inline-block;
     vertical-align: middle;
     margin-left: 9px;
+    transition: color $primary-transition;
 
     @include default-theme {
       color: black;

@@ -211,3 +211,25 @@ export function binarySearchObjectIndexes (array, value, key, order = 1) {
 
   return [ left, right ];
 }
+
+/**
+ * @param {Array} arrayA
+ * @param {Array} arrayB
+ * @return {Array}
+ */
+export function arrayDiff (arrayA = [], arrayB = []) {
+  const dict = Object.create( null );
+
+  for (let i = 0; i < arrayA.length; ++i) {
+    dict[ arrayA[ i ] ] = true;
+  }
+
+  const result = [];
+  for (let i = 0; i < arrayB.length; ++i) {
+    if (!dict[ arrayB[ i ] ]) {
+      result.push( arrayB[ i ] );
+    }
+  }
+
+  return result;
+}
