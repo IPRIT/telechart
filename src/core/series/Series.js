@@ -129,6 +129,12 @@ export class Series extends EventEmitter {
   _marker = null;
 
   /**
+   * @type {Element}
+   * @private
+   */
+  _markersGroup = null;
+
+  /**
    * @type {boolean}
    * @private
    */
@@ -440,6 +446,20 @@ export class Series extends EventEmitter {
   }
 
   /**
+   * @return {string}
+   */
+  get color () {
+    return this._color;
+  }
+
+  /**
+   * @return {string}
+   */
+  get name () {
+    return this._name;
+  }
+
+  /**
    * @return {boolean}
    */
   get isVisible () {
@@ -563,12 +583,34 @@ export class Series extends EventEmitter {
    * @private
    */
   _createMarker () {
+    if (!this._markerGroup) {
+      this._markerGroup = this._resolveMarkersGroup();
+    }
+
     this._marker = this._renderer.createCircle(0, 0, this._markerRadius, {
       class: 'telechart-chart-marker',
       stroke: this._color,
       strokeWidth: 2,
       fill: 'white'
-    }, this._group);
+    }, this._markerGroup);
+  }
+
+  /**
+   * @return {Element}
+   * @private
+   */
+  _resolveMarkersGroup () {
+    const markersGroupClass = 'telechart-chart-markers';
+    const markersGroup = this._renderer.svgContainer.querySelector( `.${markersGroupClass}` );
+
+    if (markersGroup) {
+      return markersGroup;
+    }
+
+    return this._renderer.createGroup({
+      class: markersGroupClass,
+      transform: `translate(0, ${this._chart._seriesGroupTop}) scale(1 1)`,
+    });
   }
 
   /**
@@ -738,7 +780,7 @@ export class Series extends EventEmitter {
    */
   _createMarkerAnimation (radius) {
     this._markerAnimation = new Tween(this, '_markerRadius', radius, {
-      duration: 300,
+      duration: this._markerVisible ? 300 : 100,
       timingFunction: 'easeInOutCubic'
     });
 

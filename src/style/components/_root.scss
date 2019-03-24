@@ -3,6 +3,7 @@
 
 @include block('root', 'component') {
   display: block;
+  position: relative;
   transition: background-color $primary-transition;
 
   &,

@@ -13,6 +13,7 @@ import {
 import { Tween, TweenEvents } from '../animation/Tween';
 import { ChartTypes } from './ChartTypes';
 import { ChartEvents } from './events/ChartEvents';
+import { Label } from './Label';
 
 let CHART_ID = 1;
 
@@ -248,6 +249,12 @@ export class BaseChart extends EventEmitter {
   _axisCursorUpdateNeeded = false;
 
   /**
+   * @type {Label}
+   * @private
+   */
+  _label = null;
+
+  /**
    * @param {SvgRenderer} renderer
    * @param {Object} options
    */
@@ -272,6 +279,7 @@ export class BaseChart extends EventEmitter {
 
     if (this._type === ChartTypes.chart) {
       this.initializeAxisCursor();
+      this.initializeLabel();
     }
   }
 
@@ -454,6 +462,18 @@ export class BaseChart extends EventEmitter {
   initializeAxisCursor () {
     this._createAxisCursor();
     this._addAxisCursorEvents();
+  }
+
+  /**
+   * Creates label
+   */
+  initializeLabel () {
+    const label = new Label( this._renderer );
+
+    label.setChart( this );
+    label.initialize();
+
+    this._label = label;
   }
 
   /**
@@ -782,7 +802,7 @@ export class BaseChart extends EventEmitter {
   /**
    * @param {string} label
    */
-  toggleSeriesInvisible (label) {
+  toggleSeries (label) {
     const series = this.getSeriesByLabel( label );
     if (series) {
       series.toggleVisible();
@@ -1245,10 +1265,6 @@ export class BaseChart extends EventEmitter {
     };
 
     this._onCursorMove( targetTouch );
-
-    if (this._cursorInsideChart) {
-      // ev.preventDefault();
-    }
   }
 
   /**
@@ -1313,6 +1329,17 @@ export class BaseChart extends EventEmitter {
     this.eachSeries(line => {
       line.setMarkerPointIndex( this._axisCursorPointIndex );
     });
+
+    this._updateLabelData();
+  }
+
+  /**
+   * @private
+   */
+  _updateLabelData () {
+    this._label.setData(
+      this._prepareLabelData()
+    );
   }
 
   /**
@@ -1441,5 +1468,29 @@ export class BaseChart extends EventEmitter {
 
     return chartTop >= 0 && chartTop <= this.chartHeight
       && chartLeft >= 0 && chartLeft <= this.chartWidth;
+  }
+
+  /**
+   * @return {Array}
+   * @private
+   */
+  _prepareLabelData () {
+    const data = [];
+
+    const index = this._axisCursorPointIndex;
+    const x = this._xAxis[ index ];
+
+    this.eachSeries(line => {
+      data.push({
+        color: line.color,
+        label: line.label,
+        name: line.name,
+        visible: line.isVisible,
+        x,
+        y: line._yAxis[ index ]
+      });
+    });
+
+    return data;
   }
 }

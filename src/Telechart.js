@@ -14,7 +14,7 @@ import {
   resolveElement,
   ChartThemes,
   setAttributesNS,
-  cssText, createElement, ROOT_CLASS_NAME, getWindowHeight, getElementOffset, getElementHeight, getDocumentScrollTop
+  cssText, createElement, ROOT_CLASS_NAME
 } from "./utils";
 import { NavigatorChartEvents } from './core/chart/events/NavigatorChartEvents';
 
@@ -165,10 +165,7 @@ export class Telechart {
    */
   animate () {
     const deltaTime = this._clock.getDelta();
-
-    // if (this.inWindowViewport) {
     this._animationSource.update( deltaTime );
-    // }
 
     requestAnimationFrame(_ => this.animate());
   }
@@ -221,9 +218,9 @@ export class Telechart {
     this._renderer = null;
   }
 
-  /**
+  /*/!**
    * @return {boolean}
-   */
+   *!/
   get inWindowViewport () {
     const windowHeight = getWindowHeight();
     const windowTopLine = getDocumentScrollTop();
@@ -237,7 +234,7 @@ export class Telechart {
       && windowBottomLine > chartTopLine
       || windowTopLine < chartBottomLine
       && windowBottomLine > chartBottomLine;
-  }
+  }*/
 
   /**
    * @return {string}
@@ -317,7 +314,7 @@ export class Telechart {
    */
   _addEventsListeners () {
     this._chart.on(ChartEvents.SERIES_VISIBLE_CHANGE, line => {
-      this._navigatorChart.toggleSeriesInvisible( line.label );
+      this._navigatorChart.toggleSeries( line.label );
     });
 
     this._navigatorChart.on(NavigatorChartEvents.RANGE_CHANGED, range => {

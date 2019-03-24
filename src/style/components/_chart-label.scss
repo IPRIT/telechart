@@ -1,0 +1,33 @@
+@import "../system/index";
+@import "../themes/index";
+
+@include block('chart-label', 'component') {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  padding: 8px 10px;
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 0 2px -1px rgba(0, 0, 0, 0.43), 0 1px 3px 0px rgba(0, 0, 0, 0.13);
+  transition: background-color $primary-transition;
+
+  @include default-theme {
+    background-color: #fff;
+  }
+
+  @include dark-theme {
+    background-color: $dark-color;
+    color: white;
+  }
+
+  @include element('date') {
+  }
+
+  @include element('table') {
+
+  }
+
+  @include element('table-item') {
+  }
+}
