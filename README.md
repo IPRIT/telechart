@@ -4,9 +4,39 @@
 
 > Telegram Line Graph
 
+---
+
+## Table of contents
+
+- [Demo](#demo)
+- [Features](#features)
+- [Setup](#setup)
+- [Author](#author)
+- [License](#license)
+
+## Demo
+
 [Demo page](https://iprit.github.io/telechart/)
 
-### Setup
+### Features
+
+##### 1. Data Grouping
+
+Telechart supports data grouping for large data sets (up to 5 000 000 points) with a good level of performance.
+
+##### 2. Browser support
+
+Telechart supports old browser versions (IE >= 9, Safari >= 6).
+
+##### 3. File size
+
+Telechart weighs only 19.2 kb (gziped).
+
+##### 4. Smooth animations
+
+Almost every device consistently produces 60 fps.
+
+## Setup
 
 Install dependencies
 ```sh
@@ -29,8 +59,12 @@ To preview the production build
 ```sh
 npm run preview
 ```
-___
+
+## Author
+
 Author [Alexander Belov](https://t.me/belov) 🔗
+
+## License
 
 [MIT](https://github.com/IPRIT/telechart/blob/master/LICENSE)
 
