@@ -59,7 +59,12 @@ export class ChartAxisX extends ChartAxis {
       this._interval = pixelX * chartWidth / maxAvailableLabels;
     }
 
-    const deltaX = this._interval;
+    const pixelInterval = this._interval / pixelX;
+    if (pixelInterval < minLabelWidth) {
+      this._interval *= 2;
+    } else if (pixelInterval > minLabelWidth * 2) {
+      this._interval *= .5;
+    }
 
     let currentValue = viewportMaxX;
 
@@ -67,17 +72,17 @@ export class ChartAxisX extends ChartAxis {
       const currentLastDate = this.axesValues[ this.axesValues.length - 1 ];
       const currentLastValue = this.axesValuesMapping[ currentLastDate ];
 
-      const prevValue = currentLastValue - deltaX;
-      const nextValue = currentLastValue + deltaX;
+      const prevValue = currentLastValue - this._interval;
+      const nextValue = currentLastValue + this._interval;
 
       const toLeft = this._lastMaxX > viewportMaxX;
 
       if (viewportMaxX > prevValue && viewportMaxX < nextValue) {
         currentValue = currentLastValue;
       } else if (toLeft) {
-        currentValue = currentLastValue - deltaX;
+        currentValue = currentLastValue - this._interval;
       } else {
-        currentValue = currentLastValue + deltaX;
+        currentValue = currentLastValue + this._interval;
       }
     }
 
@@ -87,7 +92,7 @@ export class ChartAxisX extends ChartAxis {
 
     while (currentValue >= viewportMinX) {
       result.unshift( currentValue );
-      currentValue -= deltaX;
+      currentValue -= this._interval;
     }
 
     return result;
