@@ -4,8 +4,6 @@
 
 > Telegram Line Graph
 
----
-
 ## Table of contents
 
 - [Demo](#demo)
