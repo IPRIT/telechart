@@ -33,7 +33,7 @@
   @include modifier('animating') {
     @include modifies-element('icon') {
       path {
-        transition: stroke-dashoffset $primary-transition .3s !important;
+        transition: stroke-dashoffset .2s $primary-transition-function .25s !important;
       }
     }
 
@@ -48,7 +48,7 @@
     vertical-align: middle;
 
     path {
-      transition: stroke-dashoffset $primary-transition;
+      transition: stroke-dashoffset .2s $primary-transition-function;
       stroke-dasharray: 15;
       stroke-dashoffset: 0;
     }

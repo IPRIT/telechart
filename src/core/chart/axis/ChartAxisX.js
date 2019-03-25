@@ -59,34 +59,26 @@ export class ChartAxisX extends ChartAxis {
       this._interval = pixelX * chartWidth / maxAvailableLabels;
     }
 
-    const pixelInterval = this._interval / pixelX;
-    if (pixelInterval < minLabelWidth) {
+    const intervalInPixels = this._interval / pixelX;
+    if (intervalInPixels < minLabelWidth) {
       this._interval *= 2;
-    } else if (pixelInterval > minLabelWidth * 2) {
+    } else if (intervalInPixels > minLabelWidth * 2) {
       this._interval *= .5;
     }
 
-    let currentValue = viewportMaxX;
+    let currentValue = viewportMaxX - pixelX * minLabelWidth / 2;
 
     if (this.axesValues.length > 0) {
-      const currentLastDate = this.axesValues[ this.axesValues.length - 1 ];
-      const currentLastValue = this.axesValuesMapping[ currentLastDate ];
+      for (let i = this.axesValues.length - 1; i >= 0; --i) {
+        const currentLastValue = this.axesValuesMapping[ this.axesValues[ i ] ];
+        const prevValue = currentLastValue - this._interval;
+        const nextValue = currentLastValue + this._interval;
 
-      const prevValue = currentLastValue - this._interval;
-      const nextValue = currentLastValue + this._interval;
-
-      const toLeft = this._lastMaxX > viewportMaxX;
-
-      if (viewportMaxX > prevValue && viewportMaxX < nextValue) {
-        currentValue = currentLastValue;
-      } else if (toLeft) {
-        currentValue = currentLastValue - this._interval;
-      } else {
-        currentValue = currentLastValue + this._interval;
+        if (viewportMaxX > prevValue && viewportMaxX < nextValue) {
+          currentValue = currentLastValue;
+        }
       }
     }
-
-    this._lastMaxX = viewportMaxX;
 
     let result = [];
 
@@ -96,20 +88,6 @@ export class ChartAxisX extends ChartAxis {
     }
 
     return result;
-  }
-
-  create () {
-    const values = this.axesValues;
-
-    for (let i = 0; i < values.length; ++i) {
-      const element = this.createNewElement( values[ i ], true );
-
-      // without animation
-      element.state = AxisElementState.pending;
-      element.opacity = 1;
-
-      this.elements.push( element );
-    }
   }
 
   /**
@@ -195,7 +173,7 @@ export class ChartAxisX extends ChartAxis {
    * @private
    */
   _computeValuePosition (value, lastValue = false) {
-    return this.chart.projectXToSvg( value ) - this.labelWidth;
+    return this.chart.projectXToSvg( value ) - this.labelWidth / 2;
   }
 
   /**

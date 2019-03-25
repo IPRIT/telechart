@@ -1,5 +1,5 @@
 import { AxisElementState, ChartAxis } from './ChartAxis';
-import { cssText, setAttributeNS, setAttributesNS } from '../../../utils';
+import { cssText, setAttributeNS } from '../../../utils';
 
 export class ChartAxisY extends ChartAxis {
 
@@ -62,20 +62,6 @@ export class ChartAxisY extends ChartAxis {
     }
 
     return result;
-  }
-
-  create () {
-    const values = this.axesValues;
-
-    for (let i = 0; i < values.length; ++i) {
-      const element = this.createNewElement( values[ i ], true );
-
-      // without animation
-      element.state = AxisElementState.pending;
-      element.opacity = 1;
-
-      this.elements.push( element );
-    }
   }
 
   /**

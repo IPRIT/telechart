@@ -321,7 +321,7 @@ export class BaseChart extends EventEmitter {
         this.updateViewportRange([
           this._rangeAnimationObject.from,
           this._rangeAnimationObject.to
-        ], { skipExtremes: false });
+        ], { skipExtremes: true });
 
       } else {
         this.updateViewportRange();

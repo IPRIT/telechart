@@ -1,5 +1,5 @@
 import { EventEmitter } from '../../misc/EventEmitter';
-import { arrayDiff, removeElement, setAttributeNS, setAttributes } from '../../../utils';
+import { arrayDiff, removeElement, setAttributeNS } from '../../../utils';
 import { Tween, TweenEvents } from '../../animation/Tween';
 
 export const AxisElementState = {
@@ -247,6 +247,17 @@ export class ChartAxis extends EventEmitter {
   }
 
   create () {
+    const values = this.axesValues;
+
+    for (let i = 0; i < values.length; ++i) {
+      const element = this.createNewElement( values[ i ], true );
+
+      // without animation
+      element.state = AxisElementState.pending;
+      element.opacity = 1;
+
+      this.elements.push( element );
+    }
   }
 
   /**
@@ -307,17 +318,26 @@ export class ChartAxis extends EventEmitter {
    * @private
    */
   _updateElementsAnimations (deltaTime) {
-    for (let i = 0; i < this.elements.length; ++i) {
-      const element = this.elements[ i ];
+    this.eachElement(element => {
+      this._updateElementAnimation( element, deltaTime );
+    })
+  }
 
-      if (element.animation) {
-        const { axisElement, valueElement, animation } = element;
-
-        animation.update( deltaTime );
-
-        axisElement && setAttributeNS( axisElement, 'stroke-opacity', element.opacity, null );
-        valueElement && setAttributeNS( valueElement, 'opacity', element.opacity, null );
-      }
+  /**
+   * @param element
+   * @param deltaTime
+   * @private
+   */
+  _updateElementAnimation (element, deltaTime) {
+    if (!element.animation) {
+      return;
     }
+
+    const { axisElement, valueElement, animation } = element;
+
+    animation.update( deltaTime );
+
+    axisElement && setAttributeNS( axisElement, 'stroke-opacity', element.opacity, null );
+    valueElement && setAttributeNS( valueElement, 'opacity', element.opacity, null );
   }
 }
