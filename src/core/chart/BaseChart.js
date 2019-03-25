@@ -16,6 +16,7 @@ import {
   setAttributeNS
 } from '../../utils';
 import { ChartAxisY } from './axis/ChartAxisY';
+import { ChartAxisX } from './axis/ChartAxisX';
 
 let CHART_ID = 1;
 
@@ -263,6 +264,12 @@ export class BaseChart extends EventEmitter {
   _yAxisView = null;
 
   /**
+   * @type {ChartAxisX}
+   * @private
+   */
+  _xAxisView = null;
+
+  /**
    * @param {SvgRenderer} renderer
    * @param {Object} options
    */
@@ -285,10 +292,12 @@ export class BaseChart extends EventEmitter {
     this.setInitialRange();
     this.approximateViewportPoints();
 
-    if (this._type === ChartTypes.chart) {
+    if (this.isChart) {
       this.initializeAxisCursor();
       this.initializeLabel();
+
       this.initializeAxisY();
+      this.initializeAxisX();
     }
   }
 
@@ -359,6 +368,10 @@ export class BaseChart extends EventEmitter {
       }
 
       this._yAxisView.update( deltaTime );
+    }
+
+    if (this._xAxisView) {
+      this._xAxisView.update( deltaTime );
     }
   }
 
@@ -464,7 +477,7 @@ export class BaseChart extends EventEmitter {
       gradientTransform: 'rotate(90)'
     }, [
       { offset: '0', stopColor: 'white', stopOpacity: 0 },
-      { offset: sharpGradient ? '0.1%' : '5%', stopColor: 'white', stopOpacity: 1 },
+      { offset: sharpGradient ? '0.1%' : '2%', stopColor: 'white', stopOpacity: 1 },
       { offset: '99.9%', stopColor: 'white', stopOpacity: 1 },
       { offset: '100%', stopColor: 'white', stopOpacity: 0 },
     ], this.defs);
@@ -507,6 +520,18 @@ export class BaseChart extends EventEmitter {
     yAxisView.initialize();
 
     this._yAxisView = yAxisView;
+  }
+
+  /**
+   * Creates y axis
+   */
+  initializeAxisX () {
+    const xAxisView = new ChartAxisX( this._renderer );
+
+    xAxisView.setChart( this );
+    xAxisView.initialize();
+
+    this._xAxisView = xAxisView;
   }
 
   /**
@@ -580,6 +605,10 @@ export class BaseChart extends EventEmitter {
         this._viewportPointsGroupingNeeded = true;
       }
 
+      if (this._xAxisView) {
+        this._xAxisView.updateAnimations();
+      }
+
       localExtremesUpdateRequested = true;
     }
 
@@ -606,6 +635,10 @@ export class BaseChart extends EventEmitter {
 
     // update cursor in next animation frame
     this._axisCursorUpdateNeeded = true;
+
+    if (this._xAxisView) {
+      this._xAxisView.requestUpdatePosition();
+    }
   }
 
   /**
@@ -797,6 +830,10 @@ export class BaseChart extends EventEmitter {
 
     if (this._yAxisView) {
       this._yAxisView.onChartResize();
+    }
+
+    if (this._xAxisView) {
+      this._xAxisView.onChartResize();
     }
   }
 

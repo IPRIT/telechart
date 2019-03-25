@@ -12,10 +12,6 @@ export class ChartAxisY extends ChartAxis {
     });
   }
 
-  updateAnimations () {
-    super.updateAnimations();
-  }
-
   createValuesGroup () {
     this.valuesGroup = this.renderer.createGroup({
       class: 'telechart-chart-axes-values-y',
@@ -68,7 +64,7 @@ export class ChartAxisY extends ChartAxis {
     return result;
   }
 
-  createAxes () {
+  create () {
     const values = this.axesValues;
 
     for (let i = 0; i < values.length; ++i) {
@@ -142,6 +138,7 @@ export class ChartAxisY extends ChartAxis {
       x: this.chart.viewportPadding,
       y: svgY,
       textAnchor: 'start',
+      opacity: initial ? 1 : 0,
       style: initial
         ? cssText({
           opacity: 0,

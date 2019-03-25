@@ -61,14 +61,14 @@ export class ChartAxis extends EventEmitter {
 
     this.updateValues();
 
-    this.createAxes();
+    this.create();
   }
 
   /**
    * @param {number} deltaTime
    */
   update (deltaTime) {
-    this._updateAnimations( deltaTime );
+    this._updateElementsAnimations( deltaTime );
 
     if (this.positionUpdateNeeded) {
       this.updatePositions();
@@ -89,6 +89,7 @@ export class ChartAxis extends EventEmitter {
 
   updateAnimations () {
     const oldValues = this.axesValues;
+
     this.updateValues();
 
     const valuesToDelete = arrayDiff( this.axesValues, oldValues );
@@ -214,7 +215,7 @@ export class ChartAxis extends EventEmitter {
    */
   detachElement (element) {
     const { value, valueElement, axisElement } = element;
-    const indexToDelete = this._getElementIndexByValue( element.value );
+    const indexToDelete = this._getElementIndexByValue( value );
 
     if (indexToDelete < 0) {
       return;
@@ -245,7 +246,7 @@ export class ChartAxis extends EventEmitter {
   createAxesGroup () {
   }
 
-  createAxes () {
+  create () {
   }
 
   /**
@@ -305,7 +306,7 @@ export class ChartAxis extends EventEmitter {
    * @param {number} deltaTime
    * @private
    */
-  _updateAnimations (deltaTime) {
+  _updateElementsAnimations (deltaTime) {
     for (let i = 0; i < this.elements.length; ++i) {
       const element = this.elements[ i ];
 
@@ -314,8 +315,8 @@ export class ChartAxis extends EventEmitter {
 
         animation.update( deltaTime );
 
-        setAttributeNS( axisElement, 'stroke-opacity', element.opacity, null );
-        setAttributeNS( valueElement, 'opacity', element.opacity, null );
+        axisElement && setAttributeNS( axisElement, 'stroke-opacity', element.opacity, null );
+        valueElement && setAttributeNS( valueElement, 'opacity', element.opacity, null );
       }
     }
   }

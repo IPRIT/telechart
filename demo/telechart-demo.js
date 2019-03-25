@@ -2,7 +2,7 @@ import sourceData from '../samples/chart_data.json';
 import { Telechart } from '../src';
 import {
   addClass, animationTimeout,
-  ChartThemes, ChartThemesColors, clampNumber,
+  ChartThemes, ChartThemesColors,
   createElement,
   cssText, isBrowserSafari,
   parseQueryString,
@@ -16,7 +16,7 @@ let currentThemeName = query && query.theme || 'default';
 const charts = window.charts = [];
 
 const from = 0;
-const count = 6;
+const count = 5;
 
 // initialize charts using requestAnimationFrame
 // for better user experience
@@ -138,49 +138,3 @@ function createChart (chartData, index) {
 
   charts.push( chart );
 }
-
-const animations = [];
-
-function runAnimation (index) {
-  const chart = charts[ index ];
-  let startDate = chart._chart._xAxis[ 0 ];
-  let endDate = chart._chart._xAxis[ chart._chart._xAxis.length - 1 ];
-  let curDate = endDate - (endDate - startDate) * .03;
-  const tickDelta = (endDate - startDate) * .005;
-  let sign = -1;
-
-  function animate () {
-    curDate += sign * tickDelta;
-    chart._chart.setViewportRange( curDate, clampNumber(curDate + tickDelta * 30, startDate + tickDelta ) );
-
-    if (curDate < startDate + 2 * tickDelta) {
-      sign *= -1;
-    } else if (curDate > endDate - tickDelta * 2) {
-      sign *= -1;
-    }
-
-    // stop animation
-    if (!animations.includes( index )) {
-      return;
-    }
-
-    requestAnimationFrame( animate );
-  }
-
-  animations.push( index );
-
-  animate();
-}
-
-function stopAnimation (index) {
-  const i = animations.indexOf( index );
-  animations.splice( i, 1 );
-}
-
-function toggleAnimation (index) {
-  animations.includes( index )
-    ? stopAnimation( index )
-    : runAnimation( index );
-}
-
-window.toggleAnimation = toggleAnimation;
