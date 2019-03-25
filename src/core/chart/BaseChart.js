@@ -937,7 +937,7 @@ export class BaseChart extends EventEmitter {
    */
   projectYToSvg (y) {
     const svgY = this.chartHeight - ( y - this._currentLocalMinY ) / this._viewportPixelY;
-    return clampNumber( svgY, -1e6, 1e6 );
+    return clampNumber( svgY || 0, -1e6, 1e6 );
   }
 
   /**

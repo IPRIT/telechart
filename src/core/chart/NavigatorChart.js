@@ -169,7 +169,7 @@ export class NavigatorChart extends BaseChart {
    * @type {number}
    * @private
    */
-  _navigatorMinRangeDistance = .05;
+  _navigatorMinRangeDistance = .075;
 
   /**
    * @type {string}

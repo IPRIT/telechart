@@ -187,7 +187,7 @@ export class ChartAxisY extends ChartAxis {
    */
   _computeValuePosition (value) {
     const fontOffsetY = 6;
-    return ( this.chart.projectYToSvg( value ) || 1e6 ) - fontOffsetY;
+    return this.chart.projectYToSvg( value ) - fontOffsetY;
   }
 
   /**
@@ -196,7 +196,7 @@ export class ChartAxisY extends ChartAxis {
    * @private
    */
   _computePathText (value) {
-    const svgY = this.chart.projectYToSvg( value ) || 1e6;
+    const svgY = this.chart.projectYToSvg( value );
     const startSvgX = this.chart.viewportPadding;
     const endSvgX = this.chart.chartWidth - this.chart.viewportPadding;
 

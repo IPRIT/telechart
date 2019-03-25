@@ -172,9 +172,9 @@ export class ChartAxis extends EventEmitter {
         }
 
         if (element.state === AxisElementState.hiding) {
-          // prevent from searching element again
-          element.hiddenFromSearch = true;
-          element = null;
+          if (element.animation) {
+            element.animation.cancel();
+          }
         }
       }
 
@@ -416,6 +416,9 @@ export class ChartAxis extends EventEmitter {
    */
   createHidingAnimation (element) {
     const onComplete = _ => {
+      element.animation = null;
+      element.state = AxisElementState.pending;
+
       this.detachElement( element );
     };
 
@@ -438,16 +441,16 @@ export class ChartAxis extends EventEmitter {
     const { value, valueElement, axisElement } = element;
     const indexToDelete = this._getElementIndexByValue( value );
 
-    if (indexToDelete < 0) {
-      return;
-    }
-
     if (valueElement) {
       this.returnToValuesPool( valueElement );
     }
 
     if (axisElement) {
       this.returnToAxesPool( axisElement );
+    }
+
+    if (indexToDelete < 0) {
+      return;
     }
 
     this.elements.splice( indexToDelete, 1 );
@@ -519,8 +522,8 @@ export class ChartAxis extends EventEmitter {
    */
   _getElementByValue (value) {
     for (let i = 0; i < this.elements.length; ++i) {
-      const { value: elementValue, hiddenFromSearch = false } = this.elements[ i ];
-      if (value === elementValue && !hiddenFromSearch) {
+      const { value: elementValue } = this.elements[ i ];
+      if (value === elementValue) {
         return this.elements[ i ];
       }
     }
@@ -537,6 +540,8 @@ export class ChartAxis extends EventEmitter {
         return i;
       }
     }
+
+    return -1;
   }
 
   /**
