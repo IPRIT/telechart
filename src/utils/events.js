@@ -5,7 +5,7 @@
  */
 export function addEventListenerOnce (element, eventName, cb) {
   if (!element) {
-    return console.warn( 'Element is missing' );
+    return;
   }
 
   const listener = ev => {

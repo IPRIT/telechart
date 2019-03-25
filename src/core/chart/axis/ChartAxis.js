@@ -1,5 +1,12 @@
 import { EventEmitter } from '../../misc/EventEmitter';
-import { arrayDiff, removeElement, setAttributeNS } from '../../../utils';
+import {
+  animationTimeout,
+  arrayDiff,
+  clampNumber,
+  cssText,
+  setAttributeNS,
+  setAttributesNS
+} from '../../../utils';
 import { Tween, TweenEvents } from '../../animation/Tween';
 
 export const AxisElementState = {
@@ -36,8 +43,37 @@ export class ChartAxis extends EventEmitter {
   axesValues = [];
 
   /**
-   * Active elements (current + showing)
-   * @type {Array<{state: *, value: *, valueElement: Element, axisElement: Element}>}
+   * @type {Array<Element>}
+   */
+  valuesPool = [];
+
+  /**
+   * @type {number}
+   */
+  valuesElementsSize = 0;
+
+  /**
+   * @type {Array<Element>}
+   */
+  axesPool = [];
+
+  /**
+   * @type {number}
+   */
+  axesElementsSize = 0;
+
+  /**
+   * @type {number}
+   */
+  maxPoolSize = 200;
+
+  /**
+   * @type {number}
+   */
+  initialPoolSize = 0;
+
+  /**
+   * @type {Array<{state: number, value: *, opacity: number, valueElement: Element, axisElement: Element}>}
    */
   elements = [];
 
@@ -64,9 +100,10 @@ export class ChartAxis extends EventEmitter {
     this.createAxesGroup();
     this.createValuesGroup();
 
-    this.updateValues();
+    this.initializePool();
 
-    this.create();
+    this.updateValues();
+    this.initializeWrappers();
   }
 
   /**
@@ -142,7 +179,7 @@ export class ChartAxis extends EventEmitter {
       }
 
       if (!element) {
-        element = this.createNewElement( value );
+        element = this.initializeWrapper( value );
         created = true;
       }
 
@@ -156,8 +193,174 @@ export class ChartAxis extends EventEmitter {
 
   /**
    * @param value
+   * @abstract
    */
-  createNewElement (value) {
+  initializeWrapper (value) {
+  }
+
+  /**
+   * @param value
+   * @param initial
+   * @abstract
+   */
+  createValueElement (value, initial = false) {
+  }
+
+  /**
+   * @param value
+   * @param initial
+   * @abstract
+   */
+  createAxisElement (value, initial = false) {
+  }
+
+  /**
+   * @abstract
+   */
+  initializePool () {
+  }
+
+  /**
+   * @abstract
+   */
+  initializeAxesPool () {
+    this.addAxesToPool( this.initialPoolSize );
+  }
+
+  /**
+   * @abstract
+   */
+  initializeValuesPool () {
+    this.addValuesToPool( this.initialPoolSize );
+  }
+
+  /**
+   * @param {number} size
+   */
+  addAxesToPool (size) {
+    size = clampNumber( size, 0, this.maxPoolSize - this.axesElementsSize );
+
+    this.axesElementsSize += size;
+
+    for (let i = 0; i < size; ++i) {
+      this.axesPool.push(
+        this.createAxisElement()
+      );
+    }
+  }
+
+  /**
+   * @param {number} size
+   */
+  addValuesToPool (size) {
+    size = clampNumber( size, 0, this.maxPoolSize - this.valuesElementsSize );
+
+    this.valuesElementsSize += size;
+
+    for (let i = 0; i < size; ++i) {
+      this.valuesPool.push(
+        this.createValueElement()
+      );
+    }
+  }
+
+  /**
+   * @param value
+   * @param initial
+   * @return {*}
+   */
+  getFromAxesPool (value, initial = false) {
+    let element = this.axesPool.shift();
+
+    if (!element) {
+      this.addAxesToPool( 1 );
+
+      element = this.axesPool.shift();
+
+      if (!element) {
+        return console.warn( 'Axes pool is empty and reached maximum size' );
+      }
+    }
+
+    this.restoreAxisElement( element, value, initial );
+
+    return element;
+  }
+
+  /**
+   * @param value
+   * @param initial
+   * @return {*}
+   */
+  getFromValuesPool (value, initial = false) {
+    let element = this.valuesPool.shift();
+
+    if (!element) {
+      this.addValuesToPool( 1 );
+
+      element = this.valuesPool.shift();
+
+      if (!element) {
+        return console.warn( 'Values pool is empty and reached maximum size' );
+      }
+    }
+
+    this.restoreValueElement( element, value, initial );
+
+    return element;
+  }
+
+  /**
+   * @param {Element} element
+   */
+  returnToValuesPool (element) {
+    this.valuesPool.push( element );
+  }
+
+  /**
+   * @param {Element} element
+   */
+  returnToAxesPool (element) {
+    this.axesPool.push( element );
+  }
+
+  /**
+   * @param element
+   * @param value
+   * @param initial
+   */
+  restoreAxisElement (element, value, initial = false) {
+    setAttributeNS( element, 'stroke-opacity', Number( initial ), null );
+  }
+
+  /**
+   * @param element
+   * @param value
+   * @param initial
+   */
+  restoreValueElement (element, value, initial = false) {
+    if (!initial) {
+      return setAttributeNS( element, 'opacity', 0, null );
+    }
+
+    setAttributesNS(element, {
+      opacity: 1,
+      style: cssText({
+        opacity: 0,
+      })
+    });
+
+    return animationTimeout( 200 ).then(_ => {
+      setAttributeNS(element, 'style', cssText({
+        opacity: 1,
+        transitionDuration: '.3s',
+        transitionProperty: 'all'
+      }), null);
+
+      return animationTimeout( 300 );
+    }).then(_ => {
+      setAttributeNS( element, 'style', '', null );
+    });
   }
 
   /**
@@ -239,8 +442,13 @@ export class ChartAxis extends EventEmitter {
       return;
     }
 
-    valueElement && removeElement( valueElement );
-    axisElement && removeElement( axisElement );
+    if (valueElement) {
+      this.returnToValuesPool( valueElement );
+    }
+
+    if (axisElement) {
+      this.returnToAxesPool( axisElement );
+    }
 
     this.elements.splice( indexToDelete, 1 );
   }
@@ -264,11 +472,11 @@ export class ChartAxis extends EventEmitter {
   createAxesGroup () {
   }
 
-  create () {
+  initializeWrappers () {
     const values = this.axesValues;
 
     for (let i = 0; i < values.length; ++i) {
-      const element = this.createNewElement( values[ i ], true );
+      const element = this.initializeWrapper( values[ i ], true );
 
       // without animation
       element.state = AxisElementState.pending;
@@ -355,7 +563,12 @@ export class ChartAxis extends EventEmitter {
 
     animation.update( deltaTime );
 
-    axisElement && setAttributeNS( axisElement, 'stroke-opacity', element.opacity, null );
-    valueElement && setAttributeNS( valueElement, 'opacity', element.opacity, null );
+    if (axisElement) {
+      setAttributeNS( axisElement, 'stroke-opacity', element.opacity, null )
+    }
+
+    if (valueElement) {
+      setAttributeNS( valueElement, 'opacity', element.opacity, null );
+    }
   }
 }

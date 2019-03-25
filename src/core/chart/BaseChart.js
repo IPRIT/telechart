@@ -674,7 +674,7 @@ export class BaseChart extends EventEmitter {
 
     // if we have no enough points
     // then we don't need to approximate
-    if (endIndex - startIndex < 400) {
+    if (endIndex - startIndex < 400 && !this.isNavigatorChart) {
       // just save indexes of points for increase performance
       // [ startIndex, endIndex ]
       this._viewportPointsIndexes[ 0 ] = startIndex;
@@ -688,7 +688,7 @@ export class BaseChart extends EventEmitter {
     const boostLimit = 500;
     const boostScale = 1 + this._xAxis.length > boostLimit
       ? Math.max(0, ( endIndex - startIndex ) / this._xAxis.length ) * 2
-      : 0;
+      : 1;
 
     let groupingDistanceLimitX = boostScale * this._groupingPixels * this._viewportPixelX;
 

@@ -1,5 +1,5 @@
 import { AxisElementState, ChartAxis } from './ChartAxis';
-import { cssText, setAttributeNS } from '../../../utils';
+import { setAttributeNS } from '../../../utils';
 
 export class ChartAxisY extends ChartAxis {
 
@@ -7,8 +7,13 @@ export class ChartAxisY extends ChartAxis {
     this.eachElement(element => {
       const { valueElement, axisElement, value } = element;
 
-      this._updatePathElementPosition( axisElement, value );
-      this._updateValueElementPosition( valueElement, value );
+      if (axisElement) {
+        this._updatePathElementPosition( axisElement, value );
+      }
+
+      if (valueElement) {
+        this._updateValueElementPosition( valueElement, value );
+      }
     });
   }
 
@@ -69,9 +74,9 @@ export class ChartAxisY extends ChartAxis {
    * @param {boolean} initial
    * @return {{axisElement: SVGPathElement, valueElement: SVGTextElement, state: number, opacity: number, value: *}}
    */
-  createNewElement (value, initial = false) {
-    const axisElement = this._createAxisElement( value, initial );
-    const valueElement = this._createValueElement( value, initial );
+  initializeWrapper (value, initial = false) {
+    const axisElement = this.getFromAxesPool( value, initial );
+    const valueElement = this.getFromValuesPool( value, initial );
 
     return {
       value,
@@ -91,61 +96,88 @@ export class ChartAxisY extends ChartAxis {
 
   /**
    * @param value
-   * @param {boolean} initial
    * @return {SVGPathElement}
-   * @private
    */
-  _createAxisElement (value, initial = false) {
+  createAxisElement (value) {
+    value = value || 0;
+
     const pathText = this._computePathText( value );
 
-    return this.renderer.createPath(pathText, {
+    const element = this.renderer.createPath(pathText, {
       class: 'telechart-chart-axis-path',
       dataValue: value,
       stroke: 'rgba(163, 196, 220, 0.2)',
       strokeWidth: 1,
-      strokeOpacity: initial ? 1 : 0,
+      strokeOpacity: 0,
       strokeLinejoin: 'round',
       strokeLinecap: 'round'
     }, this.axesGroup);
+
+    this.restoreAxisElement( element, value );
+
+    return element;
   }
 
   /**
    * @param value
-   * @param initial
    * @return {SVGTextElement}
-   * @private
    */
-  _createValueElement (value, initial = false) {
+  createValueElement (value) {
+    value = value || 0;
+
+    const valueText = String( value );
+
+    const element = this.renderer.createText(valueText, {
+      class: 'telechart-chart-axis-value',
+      x: this.chart.viewportPadding,
+      textAnchor: 'start',
+      opacity: 0
+    }, this.valuesGroup);
+
+    this.restoreValueElement( element, value );
+
+    return element;
+  }
+
+  initializePool () {
+    this.initializeAxesPool();
+    this.initializeValuesPool();
+  }
+
+  /**
+   * @param element
+   * @param value
+   * @param initial
+   */
+  restoreAxisElement (element, value, initial = false) {
+    super.restoreAxisElement( element, value, initial );
+
+    value = value || 0;
+
+    const pathText = this._computePathText( value );
+
+    setAttributeNS( element, 'data-value', value, null );
+
+    this.renderer.updatePath( element, pathText );
+  }
+
+  /**
+   * @param element
+   * @param value
+   * @param initial
+   */
+  restoreValueElement (element, value, initial = false) {
+    super.restoreValueElement( element, value, initial );
+
+    value = value || 0;
+
     const valueText = String( value );
     const svgY = this._computeValuePosition( value );
 
-    const text = this.renderer.createText(valueText, {
-      class: 'telechart-chart-axis-value',
-      x: this.chart.viewportPadding,
-      y: svgY,
-      textAnchor: 'start',
-      opacity: initial ? 1 : 0,
-      style: initial
-        ? cssText({
-          opacity: 0,
-        }) : ''
-    }, this.valuesGroup);
+    setAttributeNS( element, 'y', svgY, null );
 
-    if (initial) {
-      setTimeout(_ => {
-        setAttributeNS(text, 'style', cssText({
-          opacity: 1,
-          transitionDuration: '.3s',
-          transitionProperty: 'all'
-        }), null);
-
-        setTimeout(_ => {
-          setAttributeNS( text, 'style', '', null );
-        }, 300);
-      }, 200);
-    }
-
-    return text;
+    const tspan = element.querySelector( 'tspan' );
+    tspan.textContent = valueText;
   }
 
   /**
@@ -197,7 +229,7 @@ export class ChartAxisY extends ChartAxis {
    * @private
    */
   _updateValueElementPosition (valueElement, value) {
-    const svgY = this._computeValuePosition( value );
+    const svgY = this._computeValuePosition( value || 0 );
 
     setAttributeNS( valueElement, 'y', svgY, null );
   }

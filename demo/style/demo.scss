@@ -45,7 +45,7 @@ body {
     background-color: $dark-color;
 
     & .demo-theme-button {
-      background-color: rgba($dark-color, .8);
+      background-color: rgba($dark-color, .9);
       color: $link-color-dark;
 
       &:active {
@@ -75,7 +75,7 @@ body {
 
 .demo-theme-button {
   color: $link-color;
-  background: rgba(white, .8);
+  background: rgba(white, .9);
   display: block;
   padding: 16px 24px;
   border-radius: 50px;

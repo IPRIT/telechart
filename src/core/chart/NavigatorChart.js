@@ -485,10 +485,12 @@ export class NavigatorChart extends BaseChart {
     // slider
     const touchStartListener = this._onSliderTouchStart.bind( this );
     const touchMoveListener = this._onSliderTouchMove.bind( this );
+    const touchEndListener = this._onSliderTouchEnd.bind( this );
     const mouseDownListener = this._onSliderMouseDown.bind( this );
 
-    this._slider.addEventListener( 'touchstart', touchStartListener, passiveIfSupported );
-    this._slider.addEventListener( 'touchmove', touchMoveListener, passiveIfSupported );
+    this._slider.addEventListener( 'touchstart', touchStartListener, { passive: false } );
+    this._slider.addEventListener( 'touchmove', touchMoveListener, { passive: false } );
+    this._slider.addEventListener( 'touchend', touchEndListener );
 
     this._slider.addEventListener( 'mousedown', mouseDownListener );
 
@@ -496,21 +498,25 @@ export class NavigatorChart extends BaseChart {
     // left
     const controllerLeftTouchStartListener = this._onSliderControllerTouchStart.bind( this, 'left' );
     const controllerLeftTouchMoveListener = this._onSliderControllerTouchMove.bind( this );
+    const controllerLeftTouchEndListener = this._onSliderControllerTouchEnd.bind( this );
     const controllerLeftMouseDownListener = this._onSliderControllerMouseDown.bind( this, 'left' );
 
     //right
     const controllerRightTouchStartListener = this._onSliderControllerTouchStart.bind( this, 'right' );
     const controllerRightTouchMoveListener = this._onSliderControllerTouchMove.bind( this );
+    const controllerRightTouchEndListener = this._onSliderControllerTouchEnd.bind( this );
     const controllerRightMouseDownListener = this._onSliderControllerMouseDown.bind( this, 'right' );
 
     // left
-    this._sliderControllerLeft.addEventListener( 'touchstart', controllerLeftTouchStartListener, passiveIfSupported );
-    this._sliderControllerLeft.addEventListener( 'touchmove', controllerLeftTouchMoveListener, passiveIfSupported );
+    this._sliderControllerLeft.addEventListener( 'touchstart', controllerLeftTouchStartListener, { passive: false } );
+    this._sliderControllerLeft.addEventListener( 'touchmove', controllerLeftTouchMoveListener, { passive: false } );
+    this._sliderControllerLeft.addEventListener( 'touchend', controllerLeftTouchEndListener );
     this._sliderControllerLeft.addEventListener( 'mousedown', controllerLeftMouseDownListener );
 
     // right
-    this._sliderControllerRight.addEventListener( 'touchstart', controllerRightTouchStartListener, passiveIfSupported );
-    this._sliderControllerRight.addEventListener( 'touchmove', controllerRightTouchMoveListener, passiveIfSupported );
+    this._sliderControllerRight.addEventListener( 'touchstart', controllerRightTouchStartListener, { passive: false } );
+    this._sliderControllerRight.addEventListener( 'touchmove', controllerRightTouchMoveListener, { passive: false } );
+    this._sliderControllerRight.addEventListener( 'touchend', controllerRightTouchEndListener );
     this._sliderControllerRight.addEventListener( 'mousedown', controllerRightMouseDownListener );
 
     // overlays
@@ -563,6 +569,34 @@ export class NavigatorChart extends BaseChart {
     );
 
     this.setNavigationRange( min, max );
+
+    if (this._isSliderScrollingAction === null) {
+      const {
+        pageX: startPageX,
+        pageY: startPageY
+      } = this._sliderStartEvent;
+
+      const deltaY = Math.abs( startPageY - targetTouch.pageY );
+      const deltaX = Math.abs( startPageX - targetTouch.pageX );
+
+      this._isSliderScrollingAction = deltaY >= deltaX;
+    }
+
+    if (!this._isSliderScrollingAction) {
+      ev.preventDefault();
+    }
+  }
+
+  /**
+   * @param ev
+   * @private
+   */
+  _onSliderTouchEnd (ev) {
+    if (ev.cancelable) {
+      ev.preventDefault();
+    }
+
+    this._isSliderScrollingAction = null;
   }
 
   /**
@@ -677,6 +711,34 @@ export class NavigatorChart extends BaseChart {
     }
 
     this.setNavigationRange( min, max );
+
+    if (this._isSliderControllerScrollingAction === null) {
+      const {
+        pageX: startPageX,
+        pageY: startPageY
+      } = this._sliderControllerStartEvent;
+
+      const deltaY = Math.abs( startPageY - targetTouch.pageY );
+      const deltaX = Math.abs( startPageX - targetTouch.pageX );
+
+      this._isSliderControllerScrollingAction = deltaY >= deltaX;
+    }
+
+    if (!this._isSliderControllerScrollingAction) {
+      ev.preventDefault();
+    }
+  }
+
+  /**
+   * @param ev
+   * @private
+   */
+  _onSliderControllerTouchEnd (ev) {
+    if (ev.cancelable) {
+      ev.preventDefault();
+    }
+
+    this._isSliderControllerScrollingAction = null;
   }
 
   /**

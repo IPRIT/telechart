@@ -283,10 +283,10 @@ export class Label extends EventEmitter {
 
     for (let i = 0; i < data.length; ++i) {
       const dataItem = data[ i ];
-      if (dataItem.visible) {
+      // if (dataItem.visible) {
         const label = dataItem.label;
         this._updateTableItem( label, dataItem );
-      }
+      // }
     }
 
     if (!this._hasVisibleData) {

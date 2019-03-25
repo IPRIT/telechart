@@ -1,5 +1,5 @@
 import { AxisElementState, ChartAxis } from './ChartAxis';
-import { arrayDiff, clampNumber, cssText, setAttributeNS, setAttributesNS } from '../../../utils';
+import { setAttributeNS } from '../../../utils';
 
 export class ChartAxisX extends ChartAxis {
 
@@ -26,7 +26,9 @@ export class ChartAxisX extends ChartAxis {
     this.eachElement(element => {
       const { valueElement, value } = element;
 
-      this._updateValueElementPosition( valueElement, this.axesValuesMapping[ value ] );
+      if (valueElement) {
+        this._updateValueElementPosition( valueElement, this.axesValuesMapping[ value ] );
+      }
     });
   }
 
@@ -69,6 +71,8 @@ export class ChartAxisX extends ChartAxis {
     let currentValue = viewportMaxX - pixelX * minLabelWidth / 2;
 
     if (this.axesValues.length > 0) {
+      let foundByPrev = false;
+
       for (let i = this.axesValues.length - 1; i >= 0; --i) {
         const currentLastValue = this.axesValuesMapping[ this.axesValues[ i ] ];
         const prevValue = currentLastValue - this._interval;
@@ -76,7 +80,15 @@ export class ChartAxisX extends ChartAxis {
 
         if (viewportMaxX > prevValue && viewportMaxX < nextValue) {
           currentValue = currentLastValue;
+          foundByPrev = true;
+          break;
         }
+      }
+
+      const currentLastValue = this.axesValuesMapping[ this.axesValues[ this.axesValues.length - 1 ] ];
+
+      if (!foundByPrev && ( currentLastValue + this._interval * 2 >= viewportMaxX )) {
+        currentValue = currentLastValue + this._interval;
       }
     }
 
@@ -95,8 +107,8 @@ export class ChartAxisX extends ChartAxis {
    * @param {boolean} initial
    * @return {{axisElement: SVGPathElement, valueElement: SVGTextElement, state: number, opacity: number, value: *}}
    */
-  createNewElement (value, initial = false) {
-    const valueElement = this._createValueElement( value, initial );
+  initializeWrapper (value, initial = false) {
+    const valueElement = this.getFromValuesPool( value, initial );
 
     return {
       value,
@@ -128,42 +140,44 @@ export class ChartAxisX extends ChartAxis {
 
   /**
    * @param value
-   * @param initial
    * @return {SVGTextElement}
-   * @private
    */
-  _createValueElement (value, initial = false) {
-    const timestamp = this.axesValuesMapping[ value ];
-    const svgX = this._computeValuePosition( timestamp );
-
-    const text = this.renderer.createText(value, {
+  createValueElement (value = null) {
+    const element = this.renderer.createText(value, {
       class: 'telechart-chart-axis-value',
-      x: svgX,
       y: 0,
       textAnchor: 'start',
-      opacity: initial ? 1 : 0,
-      style: initial
-        ? cssText({
-          opacity: 0,
-        }) : ''
+      opacity: 0
     }, this.valuesGroup);
 
-    // initial font load glitch workaround
-    if (initial) {
-      setTimeout(_ => {
-        setAttributeNS(text, 'style', cssText({
-          opacity: 1,
-          transitionDuration: '.3s',
-          transitionProperty: 'all'
-        }), null);
+    this.restoreValueElement( element, value );
 
-        setTimeout(_ => {
-          setAttributeNS( text, 'style', '', null );
-        }, 300);
-      }, 200);
+    return element;
+  }
+
+  initializePool () {
+    this.initializeValuesPool();
+  }
+
+  /**
+   * @param element
+   * @param value
+   * @param initial
+   */
+  restoreValueElement (element, value, initial = false) {
+    super.restoreValueElement( element, value, initial );
+
+    let svgX = 0;
+
+    if (value !== null) {
+      const timestamp = this.axesValuesMapping[ value ];
+      svgX = this._computeValuePosition( timestamp );
     }
 
-    return text;
+    setAttributeNS( element, 'x', svgX, null );
+
+    const tspan = element.querySelector( 'tspan' );
+    tspan.textContent = (value || '').split( ' ' ).slice( 0, 2 ).join( ' ' );
   }
 
   /**
@@ -173,7 +187,7 @@ export class ChartAxisX extends ChartAxis {
    * @private
    */
   _computeValuePosition (value, lastValue = false) {
-    return this.chart.projectXToSvg( value ) - this.labelWidth / 2;
+    return this.chart.projectXToSvg( value ) - this.labelWidth * .5;
   }
 
   /**
@@ -194,7 +208,7 @@ export class ChartAxisX extends ChartAxis {
     const date = new Date( value );
     const datePart = date.toUTCString().split( ' ' );
 
-    return `${datePart[ 2 ]} ${datePart[ 1 ]}`;
+    return `${datePart[ 2 ]} ${datePart[ 1 ]} ${date.getFullYear()}`;
   }
 }
 
