@@ -606,7 +606,7 @@ export class BaseChart extends EventEmitter {
       }
 
       if (this._xAxisView) {
-        this._xAxisView.updateAnimations();
+        this._xAxisView.requestUpdateAnimations();
       }
 
       localExtremesUpdateRequested = true;
@@ -771,7 +771,7 @@ export class BaseChart extends EventEmitter {
       this._updateOrCreateMinMaxYAnimation();
 
       if (this._yAxisView) {
-        this._yAxisView.updateAnimations();
+        this._yAxisView.requestUpdateAnimations();
       }
     }
   }
@@ -843,7 +843,7 @@ export class BaseChart extends EventEmitter {
   onSeriesVisibleChange (line) {
     // find new extremes and scale
     this.updateLocalExtremes();
-    
+
     this.emit( ChartEvents.SERIES_VISIBLE_CHANGE, line );
   }
 

@@ -47,6 +47,11 @@ export class ChartAxis extends EventEmitter {
   positionUpdateNeeded = false;
 
   /**
+   * @type {boolean}
+   */
+  animationsUpdateNeeded = false;
+
+  /**
    * @param {SvgRenderer} renderer
    */
   constructor (renderer) {
@@ -70,6 +75,12 @@ export class ChartAxis extends EventEmitter {
   update (deltaTime) {
     this._updateElementsAnimations( deltaTime );
 
+    if (this.animationsUpdateNeeded) {
+      this.updateAnimations();
+
+      this.animationsUpdateNeeded = false;
+    }
+
     if (this.positionUpdateNeeded) {
       this.updatePositions();
 
@@ -82,6 +93,13 @@ export class ChartAxis extends EventEmitter {
    */
   requestUpdatePosition () {
     this.positionUpdateNeeded = true;
+  }
+
+  /**
+   * Update position in next animation frame
+   */
+  requestUpdateAnimations () {
+    this.animationsUpdateNeeded = true;
   }
 
   updatePositions () {
