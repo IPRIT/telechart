@@ -173,10 +173,7 @@ export class Telechart {
    */
   animate () {
     const deltaTime = this._clock.getDelta();
-
-    if (this.inWindowViewport) {
-      this._animationSource.update( deltaTime );
-    }
+    this._animationSource.update( deltaTime );
 
     requestAnimationFrame(_ => this.animate());
   }
@@ -229,9 +226,9 @@ export class Telechart {
     this._renderer = null;
   }
 
-  /**
+  /*/!**
    * @return {boolean}
-   */
+   *!/
   get inWindowViewport () {
     const windowHeight = getWindowHeight();
     const windowTopLine = getDocumentScrollTop();
@@ -245,7 +242,7 @@ export class Telechart {
       && windowBottomLine > chartTopLine
       || windowTopLine < chartBottomLine
       && windowBottomLine > chartBottomLine;
-  }
+  }*/
 
   /**
    * @return {string}
