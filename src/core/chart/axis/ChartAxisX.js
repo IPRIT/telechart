@@ -26,7 +26,7 @@ export class ChartAxisX extends ChartAxis {
     this.eachElement(element => {
       const { valueElement, value } = element;
 
-      this._updateValueElementPosition( valueElement, this.axesValuesMapping[ value ] || -1e2 );
+      this._updateValueElementPosition( valueElement, this.axesValuesMapping[ value ] );
     });
   }
 
@@ -137,8 +137,6 @@ export class ChartAxisX extends ChartAxis {
   updateValues () {
     super.updateValues();
 
-    this.axesValuesMapping = {};
-
     const dates = this.axesValues.map(value => {
       return this._toDateString( value );
     });
@@ -206,9 +204,7 @@ export class ChartAxisX extends ChartAxis {
    * @private
    */
   _updateValueElementPosition (valueElement, value) {
-    const svgX = this._computeValuePosition( value );
-
-    setAttributeNS( valueElement, 'x', svgX, null );
+    setAttributeNS( valueElement, 'x', this._computeValuePosition( value ), null );
   }
 
   /**
