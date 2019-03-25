@@ -6,6 +6,8 @@ import { Chart } from './core/chart/Chart';
 import { Clock } from './core/misc/Clock';
 import { NavigatorChart } from './core/chart/NavigatorChart';
 import { ChartEvents } from './core/chart/events/ChartEvents';
+import { NavigatorChartEvents } from './core/chart/events/NavigatorChartEvents';
+import { LabelButtons } from './core/chart/LabelButtons';
 
 import {
   addClass,
@@ -14,10 +16,8 @@ import {
   resolveElement,
   ChartThemes,
   setAttributesNS,
-  cssText, createElement, ROOT_CLASS_NAME
+  cssText, createElement, ROOT_CLASS_NAME, getWindowHeight, getDocumentScrollTop, getElementOffset, getElementHeight
 } from "./utils";
-import { NavigatorChartEvents } from './core/chart/events/NavigatorChartEvents';
-import { LabelButtons } from './core/chart/LabelButtons';
 
 let TELECHART_ID = 1;
 
@@ -173,7 +173,10 @@ export class Telechart {
    */
   animate () {
     const deltaTime = this._clock.getDelta();
-    this._animationSource.update( deltaTime );
+
+    if (this.inWindowViewport) {
+      this._animationSource.update( deltaTime );
+    }
 
     requestAnimationFrame(_ => this.animate());
   }
@@ -226,9 +229,9 @@ export class Telechart {
     this._renderer = null;
   }
 
-  /*/!**
+  /**
    * @return {boolean}
-   *!/
+   */
   get inWindowViewport () {
     const windowHeight = getWindowHeight();
     const windowTopLine = getDocumentScrollTop();
@@ -242,7 +245,7 @@ export class Telechart {
       && windowBottomLine > chartTopLine
       || windowTopLine < chartBottomLine
       && windowBottomLine > chartBottomLine;
-  }*/
+  }
 
   /**
    * @return {string}
