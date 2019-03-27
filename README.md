@@ -2,7 +2,7 @@
 
 # Telechart
 
-> Telegram Line Graph
+> Telegram Line Chart
 
 ## Table of contents
 
@@ -32,7 +32,7 @@ Telechart weighs only 19.2 kb (gziped).
 
 ##### 4. Smooth animations
 
-Almost every device consistently produces 60 fps.
+Almost every device consistently produces ~60 fps.
 
 ## Setup
 
