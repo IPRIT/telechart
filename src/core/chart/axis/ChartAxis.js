@@ -340,11 +340,11 @@ export class ChartAxis extends EventEmitter {
    */
   restoreValueElement (element, value, initial = false) {
     if (!initial) {
-      return setAttributeNS( element, 'opacity', 0, null );
+      return setAttributeNS( element, 'fill-opacity', 0, null );
     }
 
     setAttributesNS(element, {
-      opacity: 1,
+      fillOpacity: 1,
       style: cssText({
         opacity: 0,
       })
@@ -573,7 +573,7 @@ export class ChartAxis extends EventEmitter {
     }
 
     if (valueElement) {
-      setAttributeNS( valueElement, 'opacity', element.opacity, null );
+      setAttributeNS( valueElement, 'fill-opacity', element.opacity, null );
     }
   }
 }

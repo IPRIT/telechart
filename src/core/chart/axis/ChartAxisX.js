@@ -147,7 +147,7 @@ export class ChartAxisX extends ChartAxis {
       class: 'telechart-chart-axis-value',
       y: 0,
       textAnchor: 'start',
-      opacity: 0
+      fillOpacity: 0
     }, this.valuesGroup);
 
     this.restoreValueElement( element, value );

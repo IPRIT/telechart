@@ -131,7 +131,7 @@ export class ChartAxisY extends ChartAxis {
       class: 'telechart-chart-axis-value',
       x: this.chart.viewportPadding,
       textAnchor: 'start',
-      opacity: 0
+      fillOpacity: 0
     }, this.valuesGroup);
 
     this.restoreValueElement( element, value );
