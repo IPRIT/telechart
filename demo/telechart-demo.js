@@ -126,7 +126,7 @@ function createChart (chartData, index) {
     },
     seriesOptions: {
       grouping: {
-        pixels: 2
+        pixels: 3
       }
     }
   });

@@ -28,7 +28,7 @@ Telechart supports old browser versions (IE >= 9, Safari >= 6).
 
 ##### 3. File size
 
-Telechart weighs only 19.2 kb (gziped).
+Telechart weighs only 19.2 kb (gzipped).
 
 ##### 4. Smooth animations
 
